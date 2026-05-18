@@ -77,7 +77,7 @@ def _validate_language(language: str):
 # ── Mode 1: Ask Sia anything ──────────────────────────────────────────────────
 
 class AskRequest(BaseModel):
-    question: str = Field(..., min_length=3, max_length=2000)
+    question: str = Field(..., min_length=1, max_length=2000)
     subject: str
     language: str = "english"
     education_level: Optional[str] = None  # auto-pulled from profile if not provided
@@ -148,7 +148,7 @@ async def sia_explain_concept(
 # ── Mode 3: Solve a problem ───────────────────────────────────────────────────
 
 class SolveRequest(BaseModel):
-    question: str = Field(..., min_length=3, max_length=2000)
+    question: str = Field(..., min_length=1, max_length=2000)
     subject: str
     language: str = "english"
     education_level: Optional[str] = None
