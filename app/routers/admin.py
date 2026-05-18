@@ -1,11 +1,15 @@
+import os
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from pydantic import BaseModel, EmailStr
+from typing import Optional
 from app.core.database import get_db
 from app.core.deps import require_admin
 from app.core.security import hash_password, create_access_token, create_refresh_token
 from app.models.user import User, UserRole, TeacherProfile
+from app.models.content import Book, LibraryTarget
+from app.services.media_service import generate_upload_signature
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -16,7 +20,7 @@ class AdminRegisterRequest(BaseModel):
     email: EmailStr
     password: str
     full_name: str
-    invite_code: str   # simple protection so random people can't create admin accounts
+    invite_code: str
 
 
 class TokenResponse(BaseModel):
@@ -26,19 +30,10 @@ class TokenResponse(BaseModel):
     role: str
 
 
-# This code must be set as ADMIN_INVITE_CODE in Render environment variables
-# Only someone who knows this code can create an admin account
-ADMIN_INVITE_CODE = "SCHOLAXIA_ADMIN_2026"
-
-
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def admin_register(payload: AdminRegisterRequest, db: AsyncSession = Depends(get_db)):
-    """
-    Admin creates their own account using a secret invite code.
-    Set ADMIN_INVITE_CODE in your environment to control who can register.
-    """
-    import os
-    invite_code = os.getenv("ADMIN_INVITE_CODE", ADMIN_INVITE_CODE)
+    """Admin creates their own account using a secret invite code."""
+    invite_code = os.getenv("ADMIN_INVITE_CODE", "SCHOLAXIA_ADMIN_2026")
 
     if payload.invite_code != invite_code:
         raise HTTPException(status_code=403, detail="Invalid invite code")
@@ -67,6 +62,12 @@ async def admin_register(payload: AdminRegisterRequest, db: AsyncSession = Depen
         role=user.role,
     )
 
+
+# ── Teacher Management ────────────────────────────────────────────────────────
+
+class CreateTeacherRequest(BaseModel):
+    email: EmailStr
+    password: str
     full_name: str
     subjects: list[str]
     bio: str = ""
@@ -134,30 +135,24 @@ async def delete_teacher(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="Teacher not found")
-    user.is_active = False  # soft delete
+    user.is_active = False
 
 
 # ── Library Management ────────────────────────────────────────────────────────
 
-from app.models.content import Book, LibraryTarget
-from app.services.media_service import generate_upload_signature
-from pydantic import BaseModel as _BaseModel
-from typing import Optional as _Optional
-
-
-class AddBookRequest(_BaseModel):
+class AddBookRequest(BaseModel):
     title: str
-    author: _Optional[str] = None
+    author: Optional[str] = None
     subject: str
-    exam_type: _Optional[str] = None
-    file_key: str          # Cloudinary public_id returned from the upload signature
-    cover_image_url: _Optional[str] = None
-    description: _Optional[str] = None
-    total_pages: _Optional[int] = None
-    library_target: LibraryTarget = LibraryTarget.student  # "student" | "teacher"
+    exam_type: Optional[str] = None
+    file_key: str
+    cover_image_url: Optional[str] = None
+    description: Optional[str] = None
+    total_pages: Optional[int] = None
+    library_target: LibraryTarget = LibraryTarget.student
 
 
-class BookResponse(_BaseModel):
+class BookResponse(BaseModel):
     id: str
     title: str
     subject: str
@@ -168,13 +163,7 @@ class BookResponse(_BaseModel):
 
 
 @router.post("/library/upload-url")
-async def get_book_upload_url(
-    current_user: dict = Depends(require_admin),
-):
-    """
-    Admin gets a signed Cloudinary upload signature to upload a book PDF.
-    After upload, call POST /admin/library/books with the returned public_id.
-    """
+async def get_book_upload_url(current_user: dict = Depends(require_admin)):
     return generate_upload_signature(folder="books")
 
 
@@ -184,10 +173,6 @@ async def add_book(
     current_user: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Admin adds a book to either the student library or teacher library.
-    DRM rules are hardcoded — no download, no copy, no screenshot, no print.
-    """
     book = Book(
         title=payload.title,
         author=payload.author,
@@ -199,7 +184,6 @@ async def add_book(
         total_pages=payload.total_pages,
         library_target=payload.library_target,
         uploaded_by=current_user["sub"],
-        # DRM — always locked, no exceptions
         is_downloadable=False,
         allow_copy=False,
         allow_screenshot=False,
@@ -221,12 +205,11 @@ async def add_book(
 
 @router.get("/library/books")
 async def list_all_books(
-    library_target: _Optional[LibraryTarget] = None,
+    library_target: Optional[LibraryTarget] = None,
     current_user: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Admin views all books across both libraries."""
-    query = select(Book).where(Book.is_active == True)
+    query = select(Book).where(Book.is_active == True)  # noqa: E712
     if library_target:
         query = query.where(Book.library_target == library_target)
     result = await db.execute(query.order_by(Book.created_at.desc()))
@@ -250,7 +233,6 @@ async def remove_book(
     current_user: dict = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Admin removes a book from the library (soft delete)."""
     result = await db.execute(select(Book).where(Book.id == book_id))
     book = result.scalar_one_or_none()
     if not book:
