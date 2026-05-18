@@ -95,12 +95,17 @@ async def send_user_notification(
     data: dict = None,
 ):
     """
-    Send a notification to a single specific user (e.g. teacher tagged in assignment,
-    or student receiving a private assignment result).
+    Send a notification to a single specific user.
     """
+    # Map string to enum safely
+    try:
+        ntype = NotificationType(notification_type)
+    except ValueError:
+        ntype = NotificationType.announcement
+
     notification = Notification(
         user_id=user_id,
-        type=notification_type,
+        type=ntype,
         title=title,
         body=body,
         data=json.dumps(data or {}),
