@@ -1,9 +1,10 @@
-from fastapi import FastAPI, WebSocket, Query
+from fastapi import FastAPI, WebSocket, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.ext.asyncio import AsyncSession
 from contextlib import asynccontextmanager
 
 from app.core.config import settings
-from app.core.database import engine, Base, AsyncSessionLocal
+from app.core.database import engine, Base, AsyncSessionLocal, get_db
 from app.core.redis import init_redis, close_redis
 from app.core.seed import seed_database
 
@@ -14,15 +15,12 @@ from app.websockets.live_class_ws import live_class_endpoint
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     await init_redis()
-    # Seed default admin + community channels
     async with AsyncSessionLocal() as db:
         await seed_database(db)
     yield
-    # Shutdown
     await close_redis()
     await engine.dispose()
 
@@ -42,7 +40,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# REST Routers
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(students.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
@@ -55,16 +52,11 @@ app.include_router(payments.router, prefix="/api/v1")
 app.include_router(reviews_reports.router, prefix="/api/v1")
 app.include_router(teacher_ai.router, prefix="/api/v1")
 app.include_router(library.router, prefix="/api/v1")
-
-# Developer Portal — API key management
 app.include_router(developer_auth.router, prefix="/api/v1")
 app.include_router(developer_keys.router, prefix="/api/v1")
-
-# Public AI API — external developers call this with their API key
 app.include_router(public_ai_api.router, prefix="/api")
 
 
-# WebSocket — Live Class
 @app.websocket("/ws/live-class/{room_id}")
 async def live_class_ws(
     websocket: WebSocket,
@@ -82,11 +74,11 @@ async def health():
 
 @app.get("/db-check")
 async def db_check(db: AsyncSession = Depends(get_db)):
-    """Check if DB tables exist and are writable."""
+    """Check DB tables — remove after debugging."""
     from sqlalchemy import text
     try:
         result = await db.execute(text("SELECT tablename FROM pg_tables WHERE schemaname='public'"))
-        tables = [row[0] for row in result.fetchall()]
-        return {"status": "ok", "tables": sorted(tables), "count": len(tables)}
+        tables = sorted([row[0] for row in result.fetchall()])
+        return {"status": "ok", "tables": tables, "count": len(tables)}
     except Exception as e:
         return {"status": "error", "detail": str(e)}
