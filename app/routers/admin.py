@@ -4,15 +4,69 @@ from sqlalchemy import select
 from pydantic import BaseModel, EmailStr
 from app.core.database import get_db
 from app.core.deps import require_admin
-from app.core.security import hash_password
+from app.core.security import hash_password, create_access_token, create_refresh_token
 from app.models.user import User, UserRole, TeacherProfile
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
 
-class CreateTeacherRequest(BaseModel):
+# ── Admin Self-Registration ───────────────────────────────────────────────────
+
+class AdminRegisterRequest(BaseModel):
     email: EmailStr
     password: str
+    full_name: str
+    invite_code: str   # simple protection so random people can't create admin accounts
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    role: str
+
+
+# This code must be set as ADMIN_INVITE_CODE in Render environment variables
+# Only someone who knows this code can create an admin account
+ADMIN_INVITE_CODE = "SCHOLAXIA_ADMIN_2026"
+
+
+@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+async def admin_register(payload: AdminRegisterRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Admin creates their own account using a secret invite code.
+    Set ADMIN_INVITE_CODE in your environment to control who can register.
+    """
+    import os
+    invite_code = os.getenv("ADMIN_INVITE_CODE", ADMIN_INVITE_CODE)
+
+    if payload.invite_code != invite_code:
+        raise HTTPException(status_code=403, detail="Invalid invite code")
+
+    if len(payload.password) > 72:
+        raise HTTPException(status_code=400, detail="Password must be 72 characters or less")
+
+    existing = await db.execute(select(User).where(User.email == payload.email))
+    if existing.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    user = User(
+        email=payload.email,
+        hashed_password=hash_password(payload.password),
+        full_name=payload.full_name,
+        role=UserRole.admin,
+        is_active=True,
+        is_verified=True,
+    )
+    db.add(user)
+    await db.flush()
+
+    return TokenResponse(
+        access_token=create_access_token(str(user.id), user.role),
+        refresh_token=create_refresh_token(str(user.id)),
+        role=user.role,
+    )
+
     full_name: str
     subjects: list[str]
     bio: str = ""

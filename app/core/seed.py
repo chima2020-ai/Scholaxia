@@ -1,39 +1,18 @@
 """
 Database Seeder
 ---------------
-Creates the default admin account and community channels on first startup.
-Safe to run multiple times — skips if already exists.
+Seeds only the community channels on startup.
+Admin creates their own account via POST /api/v1/admin/register
 """
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.core.security import hash_password
-from app.core.config import settings
-from app.models.user import User, UserRole
 from app.models.community import CommunityChannel, ChannelType
 
 
 async def seed_database(db: AsyncSession):
-    await _seed_admin(db)
     await _seed_channels(db)
     await db.commit()
-
-
-async def _seed_admin(db: AsyncSession):
-    result = await db.execute(select(User).where(User.email == settings.ADMIN_EMAIL))
-    if result.scalar_one_or_none():
-        return  # already exists
-
-    admin = User(
-        email=settings.ADMIN_EMAIL,
-        hashed_password=hash_password(settings.ADMIN_PASSWORD),
-        full_name="Scholaxia Admin",
-        role=UserRole.admin,
-        is_active=True,
-        is_verified=True,
-    )
-    db.add(admin)
-    print(f"[seed] Admin created: {settings.ADMIN_EMAIL}")
 
 
 async def _seed_channels(db: AsyncSession):
@@ -57,8 +36,7 @@ async def _seed_channels(db: AsyncSession):
             select(CommunityChannel).where(CommunityChannel.channel_type == ch["channel_type"])
         )
         if result.scalar_one_or_none():
-            continue  # already seeded
-
+            continue
         channel = CommunityChannel(**ch)
         db.add(channel)
         print(f"[seed] Channel created: {ch['name']}")

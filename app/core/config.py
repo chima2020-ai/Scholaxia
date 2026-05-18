@@ -63,6 +63,7 @@ class Settings(BaseSettings):
 
     ADMIN_EMAIL: str = "admin@scholaxia.com"
     ADMIN_PASSWORD: str = "changeme"
+    ADMIN_INVITE_CODE: str = "SCHOLAXIA_ADMIN_2026"
 
     ALLOWED_ORIGINS: List[str] = ["*"]
 
