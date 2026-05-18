@@ -49,8 +49,8 @@ class Settings(BaseSettings):
     AI_HOSTED_MODEL_NAME: str = "scholaxia-edu"
     AI_HOSTED_API_KEY: str = ""
     AI_HOSTED_ENDPOINT_TYPE: str = "ollama"
-    AI_MAX_TOKENS: int = 1024
-    AI_TEMPERATURE: float = 0.4
+    AI_MAX_TOKENS: int = 2048
+    AI_TEMPERATURE: float = 0.7
 
     # Groq (free cloud AI)
     GROQ_API_KEY: str = ""
