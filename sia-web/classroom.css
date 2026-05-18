@@ -414,3 +414,30 @@ html, body {
   .chalk-step, .chalk-point { font-size: 14px; }
   .chalk-formula { font-size: 16px; }
 }
+
+/* ── Formula rendering ────────────────────────────────── */
+.formula-text {
+  font-family: 'Courier New', monospace;
+  font-size: 18px;
+  color: var(--chalk-yellow);
+  letter-spacing: 1px;
+}
+
+.math-op {
+  color: var(--chalk-blue);
+  font-weight: 700;
+  padding: 0 2px;
+}
+
+/* ── Canvas diagrams ──────────────────────────────────── */
+.chalk-diagram_hint canvas {
+  display: block;
+  margin-top: 8px;
+}
+
+.chalk-formula {
+  background: rgba(245,230,66,0.05);
+  border-left: 3px solid var(--chalk-yellow);
+  padding: 10px 16px;
+  border-radius: 0 6px 6px 0;
+}

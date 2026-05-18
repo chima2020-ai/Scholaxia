@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Developer Dashboard — Scholaxia</title>
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+<div class="dash-layout">
+
+  <!-- Sidebar -->
+  <aside class="dash-sidebar">
+    <div class="dash-brand">
+      <div class="logo-mark">S</div>
+      <span>Scholaxia</span>
+    </div>
+    <nav class="dash-nav">
+      <a href="#" class="dash-link active" onclick="showSection('keys')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        API Keys
+      </a>
+      <a href="#" class="dash-link" onclick="showSection('docs')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        API Docs
+      </a>
+      <a href="#" class="dash-link" onclick="showSection('usage')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        Usage
+      </a>
+    </nav>
+    <div class="dash-bottom">
+      <a href="chat.html" class="dash-link">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Sia Chat
+      </a>
+      <button class="dash-link logout" onclick="logout()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Log out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="dash-main">
+    <div class="dash-header">
+      <div>
+        <h1 id="section-title">API Keys</h1>
+        <p id="section-desc">Manage your Scholaxia API keys</p>
+      </div>
+      <div class="dash-user">
+        <div class="user-avatar" id="dash-avatar">D</div>
+        <span id="dash-name">Developer</span>
+      </div>
+    </div>
+
+    <!-- ── API Keys Section ── -->
+    <div id="section-keys" class="dash-section">
+      <div class="section-actions">
+        <button class="btn-new-key" onclick="showCreateKey()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Generate new key
+        </button>
+      </div>
+
+      <!-- Create key form -->
+      <div id="create-key-form" class="create-key-form" style="display:none">
+        <h3>Generate new API key</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Key name</label>
+            <input type="text" id="key-name" placeholder="e.g. My App Production" />
+          </div>
+          <div class="form-group">
+            <label>Tier</label>
+            <select id="key-tier">
+              <option value="free">Free (100 req/day)</option>
+              <option value="starter">Starter (5,000 req/day)</option>
+              <option value="growth">Growth (50,000 req/day)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-create" onclick="createKey()">Generate key</button>
+          <button class="btn-cancel" onclick="hideCreateKey()">Cancel</button>
+        </div>
+      </div>
+
+      <!-- New key display (shown once) -->
+      <div id="new-key-display" class="new-key-display" style="display:none">
+        <div class="key-warning">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Save this key now. It will NOT be shown again.
+        </div>
+        <div class="key-value-box">
+          <code id="new-key-value"></code>
+          <button onclick="copyKey()" class="copy-btn">Copy</button>
+        </div>
+        <button class="btn-cancel" onclick="document.getElementById('new-key-display').style.display='none'">Done</button>
+      </div>
+
+      <!-- Keys list -->
+      <div id="keys-list" class="keys-list">
+        <div class="loading">Loading keys...</div>
+      </div>
+    </div>
+
+    <!-- ── API Docs Section ── -->
+    <div id="section-docs" class="dash-section" style="display:none">
+      <div class="docs-content">
+        <div class="docs-intro">
+          <h2>Scholaxia AI API</h2>
+          <p>Integrate Sia — the Scholaxia Intelligent Assistant — into your application.</p>
+          <div class="base-url">
+            <span>Base URL</span>
+            <code>https://scholaxia.onrender.com/api/v1</code>
+          </div>
+        </div>
+
+        <div class="docs-section">
+          <h3>Authentication</h3>
+          <p>Pass your API key in the <code>x-api-key</code> header or as a Bearer token.</p>
+          <pre class="code-block">x-api-key: sxa_live_your_key_here
+// or
+Authorization: Bearer sxa_live_your_key_here</pre>
+        </div>
+
+        <div class="docs-section">
+          <h3>POST /ai/ask</h3>
+          <p>Ask Sia an educational question. Returns a detailed explanation.</p>
+          <div class="endpoint-badge">POST</div>
+          <pre class="code-block">curl -X POST https://scholaxia.onrender.com/api/v1/ai/ask \
+  -H "x-api-key: YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "question": "What is Newton third law?",
+    "subject": "Physics",
+    "education_level": "SS2",
+    "language": "english"
+  }'</pre>
+          <h4>Request body</h4>
+          <table class="params-table">
+            <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+            <tr><td>question</td><td>string</td><td>✓</td><td>The question to ask Sia</td></tr>
+            <tr><td>subject</td><td>string</td><td>✓</td><td>Subject area (e.g. Physics, Mathematics)</td></tr>
+            <tr><td>education_level</td><td>string</td><td></td><td>JSS1–SS3, JAMB, WAEC, NECO, Cambridge</td></tr>
+            <tr><td>language</td><td>string</td><td></td><td>english, yoruba, igbo, hausa, pidgin, french, arabic + 126 more</td></tr>
+          </table>
+          <h4>Response</h4>
+          <pre class="code-block">{
+  "answer": "Newton's 3rd law states that for every action...",
+  "subject": "Physics",
+  "education_level": "SS2",
+  "language": "english",
+  "tokens_used": 142,
+  "model": "sia-edu-v1"
+}</pre>
+        </div>
+
+        <div class="docs-section">
+          <h3>GET /ai/usage</h3>
+          <p>Check your current usage and remaining quota for today.</p>
+          <pre class="code-block">curl https://scholaxia.onrender.com/api/v1/ai/usage \
+  -H "x-api-key: YOUR_KEY"</pre>
+          <pre class="code-block">{
+  "requests_today": 45,
+  "daily_limit": 100,
+  "remaining": 55,
+  "tier": "free"
+}</pre>
+        </div>
+
+        <div class="docs-section">
+          <h3>GET /ai/models</h3>
+          <p>List available Sia AI models.</p>
+          <pre class="code-block">curl https://scholaxia.onrender.com/api/v1/ai/models \
+  -H "x-api-key: YOUR_KEY"</pre>
+        </div>
+
+        <div class="docs-section">
+          <h3>Rate Limits</h3>
+          <table class="params-table">
+            <tr><th>Tier</th><th>Daily limit</th><th>Per minute</th></tr>
+            <tr><td>Free</td><td>100</td><td>5</td></tr>
+            <tr><td>Starter</td><td>5,000</td><td>60</td></tr>
+            <tr><td>Growth</td><td>50,000</td><td>300</td></tr>
+            <tr><td>Enterprise</td><td>Unlimited</td><td>1,000</td></tr>
+          </table>
+        </div>
+
+        <div class="docs-section">
+          <h3>Supported Languages</h3>
+          <p>Sia auto-detects the language from the question. You can also specify it explicitly.</p>
+          <div class="lang-grid">
+            <span>english</span><span>yoruba</span><span>igbo</span><span>hausa</span>
+            <span>pidgin</span><span>french</span><span>arabic</span><span>spanish</span>
+            <span>portuguese</span><span>swahili</span><span>hindi</span><span>chinese</span>
+            <span>+ 120 more</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Usage Section ── -->
+    <div id="section-usage" class="dash-section" style="display:none">
+      <div id="usage-content">
+        <div class="loading">Loading usage data...</div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="dashboard.js"></script>
+</body>
+</html>
