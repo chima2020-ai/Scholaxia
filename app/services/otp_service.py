@@ -35,11 +35,13 @@ async def send_otp(email: str, full_name: str, purpose: str) -> None:
     purpose: "verify_email" | "reset_password"
     """
     otp = _generate_otp()
-    redis = await get_redis()
-    key = _redis_key(purpose, email)
-
-    # Store OTP in Redis — expires after OTP_TTL seconds
-    await redis.set(key, otp, ex=OTP_TTL)
+    try:
+        redis = await get_redis()
+        key = _redis_key(purpose, email)
+        await redis.set(key, otp, ex=OTP_TTL)
+    except Exception:
+        # Redis not available — log and continue (OTP won't be verifiable but signup won't crash)
+        print(f"[OTP] Redis unavailable — OTP for {email}: {otp}")
 
     subject, body = _build_email(purpose, full_name, otp)
     await _send_via_brevo(to_email=email, to_name=full_name, subject=subject, body=body)
