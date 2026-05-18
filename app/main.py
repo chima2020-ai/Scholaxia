@@ -82,3 +82,15 @@ async def db_check(db: AsyncSession = Depends(get_db)):
         return {"status": "ok", "tables": tables, "count": len(tables)}
     except Exception as e:
         return {"status": "error", "detail": str(e)}
+
+
+@app.post("/debug-sia")
+async def debug_sia(db: AsyncSession = Depends(get_db)):
+    """Debug endpoint to test Sia directly."""
+    try:
+        from app.ai.prompt_builder import build_explain_prompt
+        prompt = build_explain_prompt("photosynthesis", "Biology", "SS1", "english", "Test")
+        return {"status": "prompt_ok", "length": len(prompt)}
+    except Exception as e:
+        import traceback
+        return {"status": "error", "detail": str(e), "trace": traceback.format_exc()}

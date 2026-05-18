@@ -21,11 +21,11 @@ from app.core.config import settings
 async def _infer_groq(prompt: str, conversation_history: list = None,
                       image_base64: str = None) -> str:
     """
-    Calls Groq's API.
-    Supports conversation history and image input (vision).
+    Calls Groq's API with automatic retry on 429 rate limit.
     """
-    messages = []
+    import asyncio
 
+    messages = []
     if conversation_history:
         for msg in conversation_history[-6:]:
             role = msg.get("role", "user")
@@ -33,16 +33,12 @@ async def _infer_groq(prompt: str, conversation_history: list = None,
             if role in ("user", "assistant") and content:
                 messages.append({"role": role, "content": content})
 
-    # If image provided, use vision-capable model
     if image_base64:
         model = "meta-llama/llama-4-scout-17b-16e-instruct"
         messages.append({
             "role": "user",
             "content": [
-                {
-                    "type": "image_url",
-                    "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}
-                },
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}},
                 {"type": "text", "text": prompt}
             ]
         })
@@ -50,22 +46,34 @@ async def _infer_groq(prompt: str, conversation_history: list = None,
         model = settings.GROQ_MODEL
         messages.append({"role": "user", "content": prompt})
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        response = await client.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {settings.GROQ_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": model,
-                "messages": messages,
-                "max_tokens": settings.AI_MAX_TOKENS,
-                "temperature": settings.AI_TEMPERATURE,
-            },
-        )
-        response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"].strip()
+    for attempt in range(3):  # retry up to 3 times
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "messages": messages,
+                    "max_tokens": settings.AI_MAX_TOKENS,
+                    "temperature": settings.AI_TEMPERATURE,
+                },
+            )
+
+            if response.status_code == 429:
+                # Rate limited — wait and retry
+                retry_after = int(response.headers.get("retry-after", 10))
+                wait = min(retry_after, 30)  # max 30s wait
+                await asyncio.sleep(wait)
+                continue
+
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"].strip()
+
+    # All retries exhausted
+    raise Exception("Groq rate limit exceeded. Please try again in a moment.")
 
 
 # ── Backend: HOSTED (self-hosted — Ollama / vLLM / TGI) ──────────────────────

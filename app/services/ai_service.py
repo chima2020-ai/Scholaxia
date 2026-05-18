@@ -46,7 +46,12 @@ async def get_ai_response(question: str, subject: str, education_level: str,
     memory = await _get_memory(student_id, subject)
     prompt = build_prompt(question=question, subject=subject, education_level=education_level,
                           language=language, student_name=student_name, student_memory=memory)
-    raw = await run_inference(prompt, conversation_history=conversation_history)
+    try:
+        raw = await run_inference(prompt, conversation_history=conversation_history)
+    except Exception as e:
+        if "429" in str(e) or "rate limit" in str(e).lower():
+            return f"I'm getting too many requests right now, {student_name}. Please wait a moment and try again."
+        raise
     answer = sanitize_output(raw)
     await record_interaction(student_id=student_id, subject=subject, question=question, answer=answer)
     return answer
@@ -71,7 +76,13 @@ async def sia_solve(question: str, subject: str, education_level: str,
     memory = await _get_memory(student_id, subject)
     prompt = build_solve_prompt(question=question, subject=subject, education_level=education_level,
                                 language=language, student_name=student_name, student_memory=memory)
-    answer = sanitize_output(await run_inference(prompt))
+    try:
+        raw = await run_inference(prompt)
+    except Exception as e:
+        if "429" in str(e) or "rate limit" in str(e).lower():
+            return f"Too many requests right now, {student_name}. Please wait a moment and try again."
+        raise
+    answer = sanitize_output(raw)
     await record_interaction(student_id=student_id, subject=subject, question=question, answer=answer)
     return answer
 
