@@ -272,11 +272,6 @@ def _build_context(student_name: str, subject: str, education_level: str,
 
 # ── Main Prompt (default ask) ─────────────────────────────────────────────────
 
-    return "\n".join(parts)
-
-
-# ── Main Prompt (default ask) ─────────────────────────────────────────────────
-
 def build_prompt(question: str, subject: str, education_level: str,
                  language: str, student_name: str = "there",
                  student_memory: dict = None) -> str:
