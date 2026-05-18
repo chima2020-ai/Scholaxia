@@ -405,9 +405,7 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg-primar
 }
 
 .subject-input:focus { border-color: var(--accent); }
-.subject-input::placeholder { color: var(--text-muted); }
-
-.input-box {
+.subject-input::placeholder { color: var(--text-muted); }.input-box {
   display: flex;
   align-items: flex-end;
   background: var(--bg-input);
@@ -681,3 +679,19 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg-primar
 
 .speaking-indicator span:nth-child(2) { animation-delay: 0.15s; }
 .speaking-indicator span:nth-child(3) { animation-delay: 0.3s; }
+
+.subject-select-main {
+  width: 100%;
+  padding: 9px 14px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  appearance: auto;
+}
+
+.subject-select-main:focus { border-color: var(--accent); }

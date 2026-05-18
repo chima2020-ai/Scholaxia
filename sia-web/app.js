@@ -260,7 +260,7 @@ async function sendMessage() {
 
   if (!text && !hasImage) return;
 
-  const subject = document.getElementById("subject-input").value.trim() || "General";
+  const subject = document.getElementById("subject-input").value || "General";
   const mode = document.getElementById("sia-mode").value;
   const language = document.getElementById("sia-language").value;
 
@@ -299,7 +299,7 @@ async function sendMessage() {
       const formData = new FormData();
       formData.append("image", selectedImage);
       formData.append("question", text || "Analyze this image and help me understand it");
-      formData.append("subject", subject);
+      formData.append("subject", document.getElementById("subject-input").value || "General");
       formData.append("language", language);
 
       const res = await fetch(`${API}/api/v1/sia/analyze-image`, {
@@ -430,7 +430,12 @@ function escHtml(str) {
   return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-function firstName(name) { return (name || "Student").split(" ")[0]; }
+function firstName(name) {
+  if (!name) return "Student";
+  // If it looks like an email, use the part before @
+  if (name.includes("@")) return name.split("@")[0].split(".")[0];
+  return name.split(" ")[0];
+}
 
 function handleKey(e) {
   if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }

@@ -23,7 +23,7 @@ def req(method, path, data=None, token=None, expect_json=True):
     body = json.dumps(data).encode() if data else None
     r = urllib.request.Request(BASE + path, data=body, headers=headers, method=method)
     try:
-        resp = urllib.request.urlopen(r, timeout=60)
+        resp = urllib.request.urlopen(r, timeout=90)
         raw = resp.read()
         if expect_json and raw:
             return resp.status, json.loads(raw)
