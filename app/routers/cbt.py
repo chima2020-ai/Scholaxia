@@ -188,7 +188,7 @@ async def log_proctor_event(
         student_id=current_user["sub"],
         event_type=payload.event_type,
         snapshot_url=payload.snapshot_url,
-        metadata=payload.metadata or {},
+        extra_data=payload.metadata or {},
     )
     db.add(log)
     await db.flush()
@@ -216,7 +216,7 @@ async def get_proctor_logs(
             "student_id": str(l.student_id),
             "event_type": l.event_type,
             "snapshot_url": l.snapshot_url,
-            "metadata": l.metadata,
+            "extra_data": l.extra_data,
             "at": l.created_at,
         }
         for l in logs

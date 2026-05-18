@@ -85,5 +85,5 @@ class ExamProctorLog(Base):
     #   "tab_switch"        — browser tab changed
     #   "camera_lost"       — camera feed dropped
     snapshot_url: Mapped[str] = mapped_column(String(500), nullable=True)  # S3 URL of face snapshot
-    metadata: Mapped[dict] = mapped_column(JSON, default={})
+    extra_data: Mapped[dict] = mapped_column(JSON, default={})
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
