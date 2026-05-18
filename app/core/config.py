@@ -54,7 +54,7 @@ class Settings(BaseSettings):
 
     # Groq (free cloud AI)
     GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama3-70b-8192"
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
     # ElevenLabs (Sia Voice)
     ELEVENLABS_API_KEY: str = ""
