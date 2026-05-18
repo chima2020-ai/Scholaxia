@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sia Classroom — Scholaxia</title>
+  <link rel="stylesheet" href="classroom.css" />
+</head>
+<body>
+
+<!-- ── CLASSROOM SCREEN ────────────────────────────────── -->
+<div id="classroom">
+
+  <!-- Top bar -->
+  <div class="top-bar">
+    <a href="index.html" class="back-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      Back to chat
+    </a>
+    <div class="class-title">
+      <div class="sia-dot" id="sia-dot"></div>
+      <span id="class-subject">Sia Classroom</span>
+    </div>
+    <div class="student-name" id="student-name-top"></div>
+  </div>
+
+  <!-- Blackboard -->
+  <div class="blackboard" id="blackboard">
+    <div class="board-lines"></div>
+    <div id="board-writing" class="board-writing">
+      <!-- Board items written by Sia appear here -->
+      <div class="board-welcome">
+        <p class="welcome-text">Good day! I'm Sia, your teacher.</p>
+        <p class="welcome-sub">Press the mic and ask me anything.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sia speaking indicator -->
+  <div class="sia-speaking-bar" id="sia-speaking-bar" style="display:none">
+    <div class="sia-avatar-sm">S</div>
+    <div class="speaking-waves">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+    <span id="sia-speaking-text">Sia is speaking...</span>
+  </div>
+
+  <!-- Bottom controls -->
+  <div class="bottom-controls">
+    <!-- Subject selector -->
+    <select id="classroom-subject" class="subject-select">
+      <option value="General">General</option>
+      <option value="Mathematics">Mathematics</option>
+      <option value="Physics">Physics</option>
+      <option value="Chemistry">Chemistry</option>
+      <option value="Biology">Biology</option>
+      <option value="English">English</option>
+      <option value="Geography">Geography</option>
+      <option value="History">History</option>
+      <option value="Economics">Economics</option>
+      <option value="Government">Government</option>
+      <option value="Literature">Literature</option>
+    </select>
+
+    <!-- Mic button -->
+    <button id="mic-btn" class="mic-btn" onmousedown="startListening()" onmouseup="stopListening()" ontouchstart="startListening()" ontouchend="stopListening()">
+      <svg id="mic-icon" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+      <span id="mic-label">Hold to speak</span>
+    </button>
+
+    <!-- Clear board button -->
+    <button class="clear-btn" onclick="clearBoard()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+      </svg>
+      Clear board
+    </button>
+  </div>
+
+  <!-- Listening indicator -->
+  <div id="listening-overlay" class="listening-overlay" style="display:none">
+    <div class="listening-ring"></div>
+    <div class="listening-ring ring2"></div>
+    <div class="mic-center">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="white" stroke="white" stroke-width="1.5">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+    </div>
+    <p id="listening-text">Listening...</p>
+    <p id="transcript-preview" class="transcript-preview"></p>
+  </div>
+
+</div>
+
+<audio id="classroom-audio" style="display:none"></audio>
+
+<script src="classroom.js"></script>
+</body>
+</html>

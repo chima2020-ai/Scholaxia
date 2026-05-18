@@ -138,6 +138,25 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg-primar
 
 .new-chat-btn:hover { background: var(--bg-hover); }
 
+.classroom-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: rgba(16,163,127,0.15);
+  border: 1px solid rgba(16,163,127,0.3);
+  border-radius: 8px;
+  color: #7dba7d;
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+  margin-top: 8px;
+}
+
+.classroom-btn:hover { background: rgba(16,163,127,0.25); }
+
 .sidebar-history {
   flex: 1;
   overflow-y: auto;
