@@ -18,12 +18,38 @@ from app.core.config import settings
 
 # ── Backend: GROQ (free cloud API — recommended) ─────────────────────────────
 
-async def _infer_groq(prompt: str) -> str:
+async def _infer_groq(prompt: str, conversation_history: list = None,
+                      image_base64: str = None) -> str:
     """
-    Calls Groq's OpenAI-compatible API.
-    Free tier: 14,400 requests/day, 30 req/min.
-    Models available: llama3-70b-8192, llama3-8b-8192, mixtral-8x7b-32768
+    Calls Groq's API.
+    Supports conversation history and image input (vision).
     """
+    messages = []
+
+    if conversation_history:
+        for msg in conversation_history[-6:]:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content})
+
+    # If image provided, use vision-capable model
+    if image_base64:
+        model = "meta-llama/llama-4-scout-17b-16e-instruct"
+        messages.append({
+            "role": "user",
+            "content": [
+                {
+                    "type": "image_url",
+                    "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}
+                },
+                {"type": "text", "text": prompt}
+            ]
+        })
+    else:
+        model = settings.GROQ_MODEL
+        messages.append({"role": "user", "content": prompt})
+
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
             "https://api.groq.com/openai/v1/chat/completions",
@@ -32,8 +58,8 @@ async def _infer_groq(prompt: str) -> str:
                 "Content-Type": "application/json",
             },
             json={
-                "model": settings.GROQ_MODEL,
-                "messages": [{"role": "user", "content": prompt}],
+                "model": model,
+                "messages": messages,
                 "max_tokens": settings.AI_MAX_TOKENS,
                 "temperature": settings.AI_TEMPERATURE,
             },
@@ -120,14 +146,14 @@ async def _infer_local(prompt: str) -> str:
 
 # ── Public interface ──────────────────────────────────────────────────────────
 
-async def run_inference(prompt: str) -> str:
+async def run_inference(prompt: str, conversation_history: list = None,
+                        image_base64: str = None) -> str:
     backend = settings.AI_BACKEND.lower()
-
     if backend == "groq":
-        return await _infer_groq(prompt)
+        return await _infer_groq(prompt, conversation_history, image_base64)
     elif backend == "hosted":
         return await _infer_hosted(prompt)
     elif backend == "local":
         return await _infer_local(prompt)
     else:
-        raise ValueError(f"Unknown AI_BACKEND: '{backend}'. Use 'groq', 'hosted', or 'local'.")
+        raise ValueError(f"Unknown AI_BACKEND: '{backend}'")

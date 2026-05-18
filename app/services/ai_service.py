@@ -37,7 +37,8 @@ async def _get_memory(student_id: str, subject: str) -> dict:
 
 
 async def get_ai_response(question: str, subject: str, education_level: str,
-                          language: str, student_id: str, student_name: str = "there") -> str:
+                          language: str, student_id: str, student_name: str = "there",
+                          conversation_history: list = None) -> str:
     safe, reason = is_educational(question)
     if not safe:
         return reason
@@ -45,7 +46,7 @@ async def get_ai_response(question: str, subject: str, education_level: str,
     memory = await _get_memory(student_id, subject)
     prompt = build_prompt(question=question, subject=subject, education_level=education_level,
                           language=language, student_name=student_name, student_memory=memory)
-    raw = await run_inference(prompt)
+    raw = await run_inference(prompt, conversation_history=conversation_history)
     answer = sanitize_output(raw)
     await record_interaction(student_id=student_id, subject=subject, question=question, answer=answer)
     return answer

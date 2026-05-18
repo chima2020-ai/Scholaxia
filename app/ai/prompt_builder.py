@@ -57,46 +57,53 @@ def detect_language_from_text(text: str) -> str:
     """
     Auto-detect the language the student is writing in.
     Sia ALWAYS responds in the same language the student used — no exceptions.
+    Only triggers non-English if there are CLEAR, UNAMBIGUOUS markers.
     """
-    lower = text.lower()
+    lower = text.lower().strip()
 
-    pidgin_markers = ["how far", "how u dey", "how u day", "e don", "wetin", "naa",
-                      "abeg", "na wa", "oya", "i dey", "wahala", "no be", "dem say",
-                      "make u", "wey", "abi", "shey", "comot", "chop"]
-    if any(m in lower for m in pidgin_markers):
+    # Must be at least 3 chars and not pure English to trigger language detection
+    # Require MULTIPLE markers or a very specific phrase to avoid false positives
+
+    # Nigerian Pidgin — require specific multi-word phrases only
+    pidgin_phrases = [
+        "how far", "how u dey", "how u day", "e don do", "wetin dey",
+        "abeg na", "na wa o", "i dey o", "wahala dey", "no be so",
+        "dem say", "make u", "abi o", "shey you", "comot here",
+        "how body", "how life dey", "e don happen"
+    ]
+    if any(phrase in lower for phrase in pidgin_phrases):
         return "Respond fully in Nigerian Pidgin English. Match the student's Pidgin energy exactly."
 
-    yoruba_markers = ["bawo ni", "ẹ kaaro", "ẹ kaasan", "jẹ ki", "mo fẹ",
-                      "kini", "nibo", "nigba", "ṣe", "rara", "bẹẹni", "e kaaro"]
-    if any(m in lower for m in yoruba_markers):
+    # Yoruba — specific phrases
+    yoruba_phrases = ["bawo ni", "ẹ kaaro", "ẹ kaasan", "ẹ kaale", "jẹ ki a",
+                      "mo fẹ", "kini iyẹn", "e kaaro", "e kaasan"]
+    if any(phrase in lower for phrase in yoruba_phrases):
         return "Respond fully in Yoruba language."
 
-    igbo_markers = ["kedu", "ọ dị mma", "biko", "nna m", "nne m", "gịnị",
-                    "mgbe", "ọ bụ", "maka", "ọ dị", "kedu ka"]
-    if any(m in lower for m in igbo_markers):
+    # Igbo — specific phrases
+    igbo_phrases = ["kedu ka", "ọ dị mma", "biko nna", "biko nne", "gịnị mere",
+                    "kedu ihe", "ọ bụ ezie"]
+    if any(phrase in lower for phrase in igbo_phrases):
         return "Respond fully in Igbo language."
 
-    hausa_markers = ["yaya", "sannu", "ina kwana", "ina wuni", "marhaba",
-                     "don allah", "yaushe", "wane ne", "ina so"]
-    if any(m in lower for m in hausa_markers):
+    # Hausa — specific phrases
+    hausa_phrases = ["yaya kake", "ina kwana", "ina wuni", "sannu da", "don allah",
+                     "yaushe za", "ina so"]
+    if any(phrase in lower for phrase in hausa_phrases):
         return "Respond fully in Hausa language."
 
-    french_markers = ["bonjour", "comment", "qu'est", "pourquoi", "je veux",
-                      "s'il vous", "merci", "c'est", "je ne"]
-    if any(m in lower for m in french_markers):
+    # French — specific phrases
+    french_phrases = ["bonjour", "comment ça", "qu'est-ce", "pourquoi est", "je veux",
+                      "s'il vous plaît", "merci beaucoup", "c'est quoi"]
+    if any(phrase in lower for phrase in french_phrases):
         return "Respond fully in French language."
 
-    arabic_markers = ["مرحبا", "كيف", "ما هو", "لماذا", "شكرا"]
-    if any(m in text for m in arabic_markers):
+    # Arabic script detection
+    if any('\u0600' <= c <= '\u06ff' for c in text):
         return "Respond fully in Arabic language."
 
-    # Default: auto-match the student's language
-    return (
-        "CRITICAL LANGUAGE RULE: Detect the exact language or dialect the student is writing in "
-        "and respond in that EXACT same language throughout your ENTIRE response. "
-        "English → English. Pidgin → Pidgin. Yoruba → Yoruba. Igbo → Igbo. Hausa → Hausa. "
-        "French → French. Whatever language they use, you use. Never switch languages."
-    )
+    # Default: the student is writing in English — respond in English
+    return ""
 
 
 

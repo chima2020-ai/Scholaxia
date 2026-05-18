@@ -452,3 +452,213 @@ html, body { height: 100%; font-family: var(--font); background: var(--bg-primar
   .message { padding: 12px 16px; }
   .input-area { padding: 12px 16px 16px; }
 }
+
+/* ── Main Content Layout ──────────────────────────────── */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Virtual Board ────────────────────────────────────── */
+.board-panel {
+  background: #1a2a1a;
+  border-bottom: 1px solid #2a4a2a;
+  padding: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: #1e3a1e;
+  border-bottom: 1px solid #2a4a2a;
+  font-size: 13px;
+  font-weight: 600;
+  color: #7dba7d;
+  position: sticky;
+  top: 0;
+}
+
+.board-close {
+  background: transparent;
+  border: none;
+  color: #7dba7d;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.board-close:hover { background: #2a4a2a; }
+
+.board-content {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.board-item {
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  animation: boardSlide 0.3s ease;
+}
+
+@keyframes boardSlide {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.board-item.heading {
+  color: #a8e6a8;
+  font-weight: 700;
+  font-size: 14px;
+  border-left: 3px solid #4caf50;
+  padding-left: 10px;
+}
+
+.board-item.step {
+  color: #e8f5e8;
+  background: #1e3a1e;
+  border-left: 3px solid #2196f3;
+  padding-left: 10px;
+}
+
+.board-item.point {
+  color: #c8e6c8;
+  padding-left: 20px;
+  position: relative;
+}
+
+.board-item.point::before {
+  content: "•";
+  position: absolute;
+  left: 8px;
+  color: #4caf50;
+}
+
+.board-item.formula {
+  color: #fff9c4;
+  background: #2a2a1a;
+  border: 1px solid #5a5a2a;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  padding: 8px 12px;
+}
+
+.board-item.diagram_hint {
+  color: #b3e5fc;
+  font-style: italic;
+  font-size: 12px;
+}
+
+/* ── Voice Button ─────────────────────────────────────── */
+.icon-btn {
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.icon-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.icon-btn.recording { background: #ff4444; border-color: #ff4444; color: white; animation: pulse 1s infinite; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ── Voice Status ─────────────────────────────────────── */
+.voice-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  color: #ff6b6b;
+  font-size: 13px;
+}
+
+.voice-pulse {
+  width: 10px;
+  height: 10px;
+  background: #ff4444;
+  border-radius: 50%;
+  animation: pulse 0.8s infinite;
+}
+
+/* ── Image Preview ────────────────────────────────────── */
+.image-preview {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+
+.image-preview img {
+  max-height: 120px;
+  max-width: 200px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.remove-image {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  background: #ff4444;
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Image in chat ────────────────────────────────────── */
+.msg-image {
+  max-width: 200px;
+  max-height: 150px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+}
+
+/* ── Voice output indicator ───────────────────────────── */
+.speaking-indicator {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.speaking-indicator span {
+  width: 4px;
+  height: 4px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: bounce 0.8s infinite;
+}
+
+.speaking-indicator span:nth-child(2) { animation-delay: 0.15s; }
+.speaking-indicator span:nth-child(3) { animation-delay: 0.3s; }

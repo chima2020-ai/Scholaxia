@@ -5,13 +5,13 @@ All student-facing Sia endpoints.
 Sia is the Scholaxia Intelligent Assistant — friendly, adaptive, personalised.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from pydantic import BaseModel, Field
-from typing import Optional
-import io
+from typing import Optional, List
+import io, base64
 
 from app.core.database import get_db
 from app.core.deps import require_student
@@ -28,6 +28,10 @@ from app.services.ai_service import (
 )
 from app.ai.recommendation_engine import get_recommendations
 from app.ai.weakness_analyzer import get_student_history, get_weak_topics
+from app.ai.board_parser import extract_board_content
+from app.ai.model_backend import run_inference
+from app.ai.prompt_builder import build_prompt, detect_language_from_text
+from app.ai.safety_filter import sanitize_output
 from app.ai.prompt_builder import SUPPORTED_LANGUAGES as ALL_LANGUAGES
 
 router = APIRouter(prefix="/sia", tags=["Sia — AI Tutor"])
@@ -85,7 +89,7 @@ async def ask_sia(
     current_user: dict = Depends(require_student),
     db: AsyncSession = Depends(get_db),
 ):
-    """Ask Sia any educational question. Sia responds with her full personality."""
+    """Ask Sia any educational question. Returns text + board content."""
     _validate_language(payload.language)
     student_name = await _get_student_name(current_user["sub"], db)
     level = payload.education_level or await _get_student_level(current_user["sub"], db)
@@ -98,7 +102,16 @@ async def ask_sia(
         student_id=current_user["sub"],
         student_name=student_name,
     )
-    return {"sia": answer, "student": student_name, "level": level}
+
+    # Extract board content from Sia's response
+    board = extract_board_content(answer)
+
+    return {
+        "sia": answer,
+        "board": board,
+        "student": student_name,
+        "level": level
+    }
 
 
 # ── Mode 2: Explain a concept ─────────────────────────────────────────────────
@@ -638,3 +651,82 @@ async def delete_note(
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
     await db.delete(note)
+
+
+# ── Image Analysis — Student sends photo of question/diagram ─────────────────
+
+@router.post("/analyze-image")
+async def analyze_image(
+    image: UploadFile = File(...),
+    question: str = Form(default="Analyze this image and help me understand it"),
+    subject: str = Form(default="General"),
+    language: str = Form(default="english"),
+    current_user: dict = Depends(require_student),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Student uploads a photo of a question, diagram, or problem.
+    Sia analyzes it using vision AI and explains/solves it.
+    Supports: photos of textbook questions, handwritten problems, diagrams, graphs.
+    """
+    # Validate file type
+    if image.content_type not in ("image/jpeg", "image/png", "image/webp", "image/gif"):
+        raise HTTPException(status_code=400, detail="Only JPEG, PNG, WebP, or GIF images are supported.")
+
+    # Read and encode image
+    image_bytes = await image.read()
+    if len(image_bytes) > 10 * 1024 * 1024:  # 10MB limit
+        raise HTTPException(status_code=400, detail="Image too large. Maximum size is 10MB.")
+
+    image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+
+    student_name = await _get_student_name(current_user["sub"], db)
+    level = await _get_student_level(current_user["sub"], db)
+    lang_instruction = detect_language_from_text(question)
+
+    # Build vision prompt
+    vision_prompt = f"""You are Sia, the Scholaxia Intelligent Assistant — an elite AI tutor.
+
+Student Name: {student_name}
+Subject: {subject}
+Level: {level}
+{lang_instruction}
+
+The student has sent you an image. It could be:
+- A photo of a textbook question
+- A handwritten problem
+- A diagram or graph
+- A chemistry equation
+- A math problem
+- Any educational content
+
+Your task:
+1. Describe what you see in the image clearly
+2. If it's a question or problem — solve it step by step
+3. If it's a diagram — explain what it shows and what it means
+4. If it's a graph — interpret the data and explain the pattern
+5. Connect your explanation to {subject} concepts at {level} level
+6. Use Nigerian examples where relevant
+7. End with a question to check {student_name}'s understanding
+
+Student's message about the image: {question}
+
+Respond as Sia — warm, clear, educational, and thorough.
+"""
+
+    try:
+        answer = await run_inference(vision_prompt, image_base64=image_base64)
+        answer = sanitize_output(answer)
+        board = extract_board_content(answer)
+
+        return {
+            "sia": answer,
+            "board": board,
+            "student": student_name,
+            "image_analyzed": True,
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=503,
+            detail="Image analysis temporarily unavailable. Please describe the image in text instead."
+        )
