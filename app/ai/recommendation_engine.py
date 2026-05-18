@@ -38,7 +38,7 @@ async def get_recommendations(
     return {
         "weak_topics": weak_topics_for_subject,
         "recommended_books": [
-            {"id": str(b.id), "title": b.title, "author": b.author, "file_url": b.file_url}
+            {"id": str(b.id), "title": b.title, "author": b.author}
             for b in books
         ],
         "recommended_videos": [

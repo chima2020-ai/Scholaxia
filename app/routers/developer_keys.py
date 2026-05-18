@@ -64,9 +64,9 @@ async def create_api_key(
 ):
     # Limit free tier to 3 keys per developer
     count_result = await db.execute(
-        select(func.count()).where(
+        select(func.count(ApiKey.id)).where(
             ApiKey.owner_id == current_user["sub"],
-            ApiKey.is_active == True,
+            ApiKey.is_active == True,  # noqa: E712
         )
     )
     active_count = count_result.scalar()
