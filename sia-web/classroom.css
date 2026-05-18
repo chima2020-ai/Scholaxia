@@ -441,3 +441,24 @@ html, body {
   padding: 10px 16px;
   border-radius: 0 6px 6px 0;
 }
+
+.chalk-equation {
+  font-family: 'Courier New', monospace;
+  font-size: 20px;
+  color: var(--chalk-yellow);
+  background: rgba(245,230,66,0.06);
+  border: 1px solid rgba(245,230,66,0.2);
+  border-radius: 6px;
+  padding: 10px 16px;
+  margin: 4px 0;
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(245,230,66,0.25);
+}
+
+.chalk-example {
+  font-size: 15px;
+  color: #b3e5fc;
+  padding-left: 16px;
+  border-left: 2px solid rgba(179,229,252,0.3);
+  margin: 2px 0;
+}

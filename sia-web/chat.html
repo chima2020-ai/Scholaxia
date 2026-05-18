@@ -63,16 +63,9 @@
     </div>
   </aside>
 
-  <!-- Main Content -->
+  <!-- Chat -->
   <div class="main-content">
-    <div id="board-panel" class="board-panel" style="display:none">
-      <div class="board-header">
-        <span>📋 Sia's Board</span>
-        <button onclick="clearBoard()" class="board-close">✕</button>
-      </div>
-      <div id="board-content" class="board-content"></div>
-    </div>
-
+    <!-- Chat Area -->
     <main class="chat-area">
       <div id="empty-state" class="empty-state">
         <div class="sia-welcome">
@@ -141,7 +134,6 @@
   </div>
 </div>
 
-<audio id="sia-audio" style="display:none"></audio>
 <script src="chat.js"></script>
 <script>
 // Redirect to auth if not logged in

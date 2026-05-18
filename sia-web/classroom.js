@@ -175,7 +175,7 @@ function writeToBoard(items) {
       }
 
       // For formulas — render on a mini canvas
-      if (item.type === "formula") {
+      if (item.type === "formula" || item.type === "equation") {
         el.innerHTML = renderFormula(item.content);
       } else if (item.type === "diagram_hint") {
         el.innerHTML = renderDiagram(item.content);
