@@ -23,7 +23,7 @@ def req(method, path, data=None, token=None, expect_json=True):
     body = json.dumps(data).encode() if data else None
     r = urllib.request.Request(BASE + path, data=body, headers=headers, method=method)
     try:
-        resp = urllib.request.urlopen(r, timeout=30)
+        resp = urllib.request.urlopen(r, timeout=60)
         raw = resp.read()
         if expect_json and raw:
             return resp.status, json.loads(raw)
@@ -34,6 +34,8 @@ def req(method, path, data=None, token=None, expect_json=True):
             return e.code, json.loads(raw)
         except Exception:
             return e.code, raw.decode()[:200]
+    except Exception as e:
+        return 0, f"TIMEOUT/ERROR: {str(e)[:100]}"
 
 def post(path, data, token=None): return req("POST", path, data, token)
 def get(path, token=None): return req("GET", path, token=token)
