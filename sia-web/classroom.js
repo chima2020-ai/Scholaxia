@@ -45,7 +45,7 @@ function initRecognition() {
   recognition.onend = () => {
     const transcript = document.getElementById("transcript-preview").textContent.trim();
     stopListeningUI();
-    if (transcript) askSia(transcript);
+    if (transcript && !isFetching) askSia(transcript);
   };
 
   recognition.onerror = (e) => {
@@ -83,14 +83,16 @@ function stopListeningUI() {
 }
 
 // ── Ask Sia ────────────────────────────────────────────
+let isFetching = false; // prevent double calls
+
 async function askSia(question) {
+  if (isFetching) return; // ignore if already waiting for response
+  isFetching = true;
+
   const subject = document.getElementById("classroom-subject").value;
   writeToBoardRaw("Sia is thinking...");
 
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90000); // 90s timeout
-
     const res = await fetch(`${API}/api/v1/sia/ask`, {
       method: "POST",
       headers: {
@@ -98,20 +100,17 @@ async function askSia(question) {
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ question, subject, language: "english" }),
-      signal: controller.signal,
     });
-
-    clearTimeout(timeout);
 
     if (res.status === 401) { window.location.href = "index.html"; return; }
     if (!res.ok) {
       removeThinking();
-      speakDeep("I had trouble connecting. Please try again.");
+      speakDeep("I had trouble getting a response. Please ask again.");
       return;
     }
 
     const data = await res.json();
-    const answer = data.sia || "I couldn't get a response. Please try again.";
+    const answer = data.sia || "I could not get a response. Please try again.";
     const board = data.board || [];
 
     removeThinking();
@@ -120,7 +119,6 @@ async function askSia(question) {
       clearBoardContent();
       writeToBoard(board);
     } else {
-      // Even if no structured board, write the key sentence
       clearBoardContent();
       const firstLine = answer.split("\n").find(l => l.trim().length > 10) || "";
       if (firstLine) {
@@ -135,11 +133,9 @@ async function askSia(question) {
 
   } catch (e) {
     removeThinking();
-    if (e.name === "AbortError") {
-      speakDeep("That took too long. The server might be waking up. Please try again.");
-    } else {
-      speakDeep("Connection issue. Please check your internet and try again.");
-    }
+    speakDeep("Please ask your question again.");
+  } finally {
+    isFetching = false; // always reset so next question works
   }
 }
 
