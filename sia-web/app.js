@@ -63,12 +63,12 @@ async function login() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password }),
+      signal: AbortSignal.timeout(30000),
     });
     const data = await res.json();
     if (!res.ok) { errEl.textContent = data.detail || "Login failed."; return; }
 
     token = data.access_token;
-    // Get name from profile
     const profile = await fetch(`${API}/api/v1/students/me`, {
       headers: { Authorization: `Bearer ${token}` }
     });
@@ -83,7 +83,11 @@ async function login() {
     localStorage.setItem("sia_name", userName);
     showApp();
   } catch (e) {
-    errEl.textContent = "Network error. Please try again.";
+    if (e.name === "TimeoutError") {
+      errEl.textContent = "Request timed out. The server may be waking up — try again in 30 seconds.";
+    } else {
+      errEl.textContent = "Network error. Please try again.";
+    }
   } finally {
     btn.disabled = false;
     btn.textContent = "Log in";
@@ -109,6 +113,7 @@ async function signup() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email, password, full_name: name }),
+      signal: AbortSignal.timeout(30000),
     });
     const data = await res.json();
     if (!res.ok) { errEl.textContent = data.detail || "Signup failed."; return; }
@@ -119,7 +124,11 @@ async function signup() {
     localStorage.setItem("sia_name", userName);
     showApp();
   } catch (e) {
-    errEl.textContent = "Network error. Please try again.";
+    if (e.name === "TimeoutError") {
+      errEl.textContent = "Request timed out. The server may be waking up — try again in 30 seconds.";
+    } else {
+      errEl.textContent = "Network error. Please try again.";
+    }
   } finally {
     btn.disabled = false;
     btn.textContent = "Create account";
