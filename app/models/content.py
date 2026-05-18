@@ -1,0 +1,111 @@
+import uuid
+from datetime import datetime
+from sqlalchemy import String, Boolean, DateTime, ForeignKey, Text, Integer, Enum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import UUID, ARRAY
+from app.core.database import Base
+import enum
+
+
+class LibraryTarget(str, enum.Enum):
+    student = "student"   # visible in student library
+    teacher = "teacher"   # visible in teacher library only
+
+
+class Book(Base):
+    __tablename__ = "books"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    author: Mapped[str] = mapped_column(String(255), nullable=True)
+    subject: Mapped[str] = mapped_column(String(100), nullable=False)
+    exam_type: Mapped[str] = mapped_column(String(20), nullable=True)
+    file_key: Mapped[str] = mapped_column(String(500), nullable=False)   # S3 object key (never exposed directly)
+    cover_image_url: Mapped[str] = mapped_column(String(500), nullable=True)
+    description: Mapped[str] = mapped_column(Text, nullable=True)
+    total_pages: Mapped[int] = mapped_column(Integer, nullable=True)
+
+    # Library target — who can see this book
+    library_target: Mapped[LibraryTarget] = mapped_column(
+        Enum(LibraryTarget), default=LibraryTarget.student, nullable=False
+    )
+
+    # DRM / protection rules — same rules apply to both students and teachers
+    is_downloadable: Mapped[bool] = mapped_column(Boolean, default=False)   # always False
+    allow_copy: Mapped[bool] = mapped_column(Boolean, default=False)        # no text selection/copy
+    allow_screenshot: Mapped[bool] = mapped_column(Boolean, default=False)  # frontend enforces this
+    allow_print: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    uploaded_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    saved_by: Mapped[list["SavedBook"]] = relationship("SavedBook", back_populates="book")
+    read_progress: Mapped[list["BookReadProgress"]] = relationship("BookReadProgress", back_populates="book")
+
+
+class SavedBook(Base):
+    """
+    User saves a book inside the app (no download — in-app only).
+    Works for both students and teachers.
+    """
+    __tablename__ = "saved_books"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    book_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("books.id"), nullable=False)
+    saved_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    book: Mapped["Book"] = relationship("Book", back_populates="saved_by")
+
+
+class BookReadProgress(Base):
+    """
+    Tracks which page a user is on so they can continue reading.
+    """
+    __tablename__ = "book_read_progress"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    book_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("books.id"), nullable=False)
+    current_page: Mapped[int] = mapped_column(Integer, default=1)
+    last_read_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    book: Mapped["Book"] = relationship("Book", back_populates="read_progress")
+
+
+class Video(Base):
+    __tablename__ = "videos"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    subject: Mapped[str] = mapped_column(String(100), nullable=False)
+    exam_type: Mapped[str] = mapped_column(String(20), nullable=True)
+    video_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    thumbnail_url: Mapped[str] = mapped_column(String(500), nullable=True)
+    duration_seconds: Mapped[int] = mapped_column(Integer, nullable=True)
+    uploaded_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Note(Base):
+    __tablename__ = "notes"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    subject: Mapped[str] = mapped_column(String(100), nullable=False)
+    topic: Mapped[str] = mapped_column(String(255), nullable=True)
+    exam_type: Mapped[str] = mapped_column(String(20), nullable=True)
+    file_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    uploaded_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Syllabus(Base):
+    __tablename__ = "syllabi"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    subject: Mapped[str] = mapped_column(String(100), nullable=False)
+    exam_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    topics: Mapped[list] = mapped_column(ARRAY(String), default=[])
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

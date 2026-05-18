@@ -1,0 +1,111 @@
+import json
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from app.models.user import StudentProfile, User
+from app.models.notification import Notification, DeviceToken, NotificationType
+import firebase_admin
+from firebase_admin import messaging, credentials
+from app.core.config import settings
+
+# Initialize Firebase once
+_firebase_initialized = False
+
+
+def init_firebase():
+    global _firebase_initialized
+    if not _firebase_initialized:
+        try:
+            cred = credentials.Certificate(settings.FIREBASE_CREDENTIALS_PATH)
+            firebase_admin.initialize_app(cred)
+            _firebase_initialized = True
+        except Exception:
+            pass  # Firebase not configured yet
+
+
+async def send_subject_notification(
+    db: AsyncSession,
+    subject: str,
+    title: str,
+    body: str,
+    notification_type: str,
+    data: dict = None,
+):
+    """
+    Send push + in-app notifications ONLY to students who selected the given subject.
+    This is the core targeted notification logic for live classes.
+    """
+    # Find all students who have this subject in their selected_subjects
+    result = await db.execute(
+        select(StudentProfile).where(
+            StudentProfile.selected_subjects.contains([subject])
+        )
+    )
+    profiles = result.scalars().all()
+
+    student_ids = [str(p.user_id) for p in profiles]
+
+    # Save in-app notifications
+    for student_id in student_ids:
+        notification = Notification(
+            user_id=student_id,
+            type=NotificationType.live_class,
+            title=title,
+            body=body,
+            data=json.dumps(data or {}),
+        )
+        db.add(notification)
+
+    await db.flush()
+
+    # Send push notifications via FCM
+    await _send_push_to_users(db, student_ids, title, body, data or {})
+
+
+async def _send_push_to_users(db: AsyncSession, user_ids: list, title: str, body: str, data: dict):
+    init_firebase()
+    if not _firebase_initialized:
+        return
+
+    result = await db.execute(
+        select(DeviceToken).where(DeviceToken.user_id.in_(user_ids))
+    )
+    tokens = result.scalars().all()
+
+    fcm_tokens = [t.token for t in tokens]
+    if not fcm_tokens:
+        return
+
+    # Batch send (FCM supports up to 500 per batch)
+    for i in range(0, len(fcm_tokens), 500):
+        batch = fcm_tokens[i:i + 500]
+        message = messaging.MulticastMessage(
+            notification=messaging.Notification(title=title, body=body),
+            data={k: str(v) for k, v in data.items()},
+            tokens=batch,
+        )
+        messaging.send_each_for_multicast(message)
+
+
+async def send_user_notification(
+    db: AsyncSession,
+    user_id: str,
+    title: str,
+    body: str,
+    notification_type: str,
+    data: dict = None,
+):
+    """
+    Send a notification to a single specific user (e.g. teacher tagged in assignment,
+    or student receiving a private assignment result).
+    """
+    notification = Notification(
+        user_id=user_id,
+        type=notification_type,
+        title=title,
+        body=body,
+        data=json.dumps(data or {}),
+    )
+    db.add(notification)
+    await db.flush()
+
+    await _send_push_to_users(db, [user_id], title, body, data or {})

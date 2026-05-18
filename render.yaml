@@ -1,0 +1,87 @@
+services:
+  - type: web
+    name: scholaxia-api
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: scholaxia-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: scholaxia-redis
+          type: redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+
+      # Sia AI — Groq
+      - key: AI_BACKEND
+        value: groq
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama3-70b-8192
+      - key: AI_MAX_TOKENS
+        value: "1024"
+      - key: AI_TEMPERATURE
+        value: "0.4"
+
+      # Cloudinary
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+      # Brevo (OTP Email)
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        value: noreply@scholaxia.com
+      - key: BREVO_SENDER_NAME
+        value: Scholaxia
+      - key: OTP_EXPIRE_MINUTES
+        value: "10"
+
+      # Stripe (Payments — add later)
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+
+      # Firebase (Push Notifications)
+      - key: FIREBASE_CREDENTIALS_PATH
+        value: firebase-credentials.json
+
+      # ElevenLabs (Sia Voice)
+      - key: ELEVENLABS_API_KEY
+        sync: false
+      - key: ELEVENLABS_VOICE_ID
+        value: 21m00Tcm4TlvDq8ikWAM
+      - key: ELEVENLABS_MODEL_ID
+        value: eleven_multilingual_v2
+
+      # Admin
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+
+      - key: ALLOWED_ORIGINS
+        value: '["*"]'
+
+databases:
+  - name: scholaxia-db
+    databaseName: scholaxia
+    user: scholaxia
+    plan: free
+
+  - name: scholaxia-redis
+    type: redis
+    plan: free

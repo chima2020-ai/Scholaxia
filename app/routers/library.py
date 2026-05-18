@@ -1,0 +1,252 @@
+"""
+Library Router
+--------------
+Student Library  — books uploaded by admin for students
+Teacher Library  — books uploaded by admin specifically for teachers
+
+Rules (same for both):
+  - No download (signed URL with inline disposition, expires in 30 min)
+  - No copy / text selection (DRM flag sent to frontend)
+  - No screenshot (DRM flag sent to frontend — frontend enforces)
+  - Books can be saved inside the app (SavedBook)
+  - Reading progress is tracked (BookReadProgress)
+"""
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+
+from app.core.database import get_db
+from app.core.deps import get_current_user, require_student, require_teacher
+from app.models.content import Book, SavedBook, BookReadProgress, LibraryTarget
+from app.models.user import UserRole
+from app.services.media_service import generate_read_url
+
+router = APIRouter(prefix="/library", tags=["Library"])
+
+
+# ── Shared: Book detail response with DRM flags ───────────────────────────────
+
+def _book_response(book: Book, read_url: str = None, current_page: int = 1) -> dict:
+    return {
+        "id": str(book.id),
+        "title": book.title,
+        "author": book.author,
+        "subject": book.subject,
+        "exam_type": book.exam_type,
+        "cover_image_url": book.cover_image_url,
+        "description": book.description,
+        "total_pages": book.total_pages,
+        "library_target": book.library_target,
+        # DRM flags — frontend must respect these
+        "drm": {
+            "is_downloadable": False,       # always False — no exceptions
+            "allow_copy": False,            # no text selection or highlight copy
+            "allow_screenshot": False,      # frontend blocks screenshot
+            "allow_print": False,
+        },
+        # Signed read URL — expires in 30 min, inline only (no download trigger)
+        "read_url": read_url,
+        "current_page": current_page,
+    }
+
+
+# ── Student Library ───────────────────────────────────────────────────────────
+
+@router.get("/student")
+async def student_library(
+    subject: Optional[str] = None,
+    exam_type: Optional[str] = None,
+    current_user: dict = Depends(require_student),
+    db: AsyncSession = Depends(get_db),
+):
+    """Browse all books available in the student library."""
+    query = select(Book).where(
+        Book.library_target == LibraryTarget.student,
+        Book.is_active == True,
+    )
+    if subject:
+        query = query.where(Book.subject == subject)
+    if exam_type:
+        query = query.where(Book.exam_type == exam_type)
+
+    result = await db.execute(query.order_by(Book.created_at.desc()))
+    books = result.scalars().all()
+
+    return [_book_response(b) for b in books]
+
+
+# ── Teacher Library ───────────────────────────────────────────────────────────
+
+@router.get("/teacher")
+async def teacher_library(
+    subject: Optional[str] = None,
+    current_user: dict = Depends(require_teacher),
+    db: AsyncSession = Depends(get_db),
+):
+    """Browse all books sent to teachers by admin."""
+    query = select(Book).where(
+        Book.library_target == LibraryTarget.teacher,
+        Book.is_active == True,
+    )
+    if subject:
+        query = query.where(Book.subject == subject)
+
+    result = await db.execute(query.order_by(Book.created_at.desc()))
+    books = result.scalars().all()
+
+    return [_book_response(b) for b in books]
+
+
+# ── Open a book (get signed read URL) ────────────────────────────────────────
+
+@router.get("/{book_id}/read")
+async def open_book(
+    book_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Returns a short-lived signed URL to render the book inside the app.
+    - URL expires in 30 minutes
+    - ContentDisposition=inline — cannot be used to download
+    - DRM flags tell the frontend to block copy, screenshot, and print
+    """
+    result = await db.execute(select(Book).where(Book.id == book_id, Book.is_active == True))
+    book = result.scalar_one_or_none()
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    role = current_user.get("role")
+
+    # Students can only access student library books
+    if role == UserRole.student and book.library_target != LibraryTarget.student:
+        raise HTTPException(status_code=403, detail="This book is not in your library")
+
+    # Teachers can only access teacher library books
+    if role == UserRole.teacher and book.library_target != LibraryTarget.teacher:
+        raise HTTPException(status_code=403, detail="This book is not in your library")
+
+    # Get current reading progress
+    progress_result = await db.execute(
+        select(BookReadProgress).where(
+            BookReadProgress.user_id == current_user["sub"],
+            BookReadProgress.book_id == book_id,
+        )
+    )
+    progress = progress_result.scalar_one_or_none()
+    current_page = progress.current_page if progress else 1
+
+    # Generate signed read URL — 30 min expiry, inline only
+    read_url = generate_read_url(book.file_key, expires_in_seconds=1800)
+
+    return _book_response(book, read_url=read_url, current_page=current_page)
+
+
+# ── Save a book inside the app ────────────────────────────────────────────────
+
+@router.post("/{book_id}/save")
+async def save_book(
+    book_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Save a book to the user's in-app library.
+    This does NOT download the file — it just bookmarks it inside the app.
+    """
+    result = await db.execute(select(Book).where(Book.id == book_id, Book.is_active == True))
+    book = result.scalar_one_or_none()
+    if not book:
+        raise HTTPException(status_code=404, detail="Book not found")
+
+    # Check not already saved
+    existing = await db.execute(
+        select(SavedBook).where(
+            SavedBook.user_id == current_user["sub"],
+            SavedBook.book_id == book_id,
+        )
+    )
+    if existing.scalar_one_or_none():
+        return {"message": "Already saved"}
+
+    saved = SavedBook(user_id=current_user["sub"], book_id=book_id)
+    db.add(saved)
+    await db.flush()
+    return {"message": "Book saved to your library", "book_id": book_id}
+
+
+@router.delete("/{book_id}/save")
+async def unsave_book(
+    book_id: str,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove a book from saved list."""
+    result = await db.execute(
+        select(SavedBook).where(
+            SavedBook.user_id == current_user["sub"],
+            SavedBook.book_id == book_id,
+        )
+    )
+    saved = result.scalar_one_or_none()
+    if not saved:
+        raise HTTPException(status_code=404, detail="Book not in saved list")
+    await db.delete(saved)
+    return {"message": "Removed from saved"}
+
+
+@router.get("/saved")
+async def my_saved_books(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get all books the user has saved inside the app."""
+    result = await db.execute(
+        select(SavedBook, Book)
+        .join(Book, Book.id == SavedBook.book_id)
+        .where(SavedBook.user_id == current_user["sub"])
+        .order_by(SavedBook.saved_at.desc())
+    )
+    rows = result.all()
+    return [_book_response(b) for _, b in rows]
+
+
+# ── Reading progress ──────────────────────────────────────────────────────────
+
+class UpdateProgressRequest(BaseModel):
+    current_page: int
+
+
+@router.post("/{book_id}/progress")
+async def update_read_progress(
+    book_id: str,
+    payload: UpdateProgressRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Frontend calls this as the user turns pages — tracks where they left off."""
+    result = await db.execute(
+        select(BookReadProgress).where(
+            BookReadProgress.user_id == current_user["sub"],
+            BookReadProgress.book_id == book_id,
+        )
+    )
+    progress = result.scalar_one_or_none()
+
+    if progress:
+        progress.current_page = payload.current_page
+        progress.last_read_at = datetime.utcnow()
+    else:
+        progress = BookReadProgress(
+            user_id=current_user["sub"],
+            book_id=book_id,
+            current_page=payload.current_page,
+        )
+        db.add(progress)
+
+    await db.flush()
+    return {"book_id": book_id, "current_page": payload.current_page}
