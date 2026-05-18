@@ -23,7 +23,7 @@ class ApiKey(Base):
 
     # The actual key — stored hashed, prefix shown to user
     key_hash: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
-    key_prefix: Mapped[str] = mapped_column(String(30), nullable=False)
+    key_prefix: Mapped[str] = mapped_column(String(12), nullable=False)  # e.g. "sxa_live_ab12"
 
     name: Mapped[str] = mapped_column(String(100), nullable=False)       # developer-given label
     tier: Mapped[ApiKeyTier] = mapped_column(Enum(ApiKeyTier), default=ApiKeyTier.free)

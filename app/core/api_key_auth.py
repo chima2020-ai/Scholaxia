@@ -45,7 +45,7 @@ def generate_api_key() -> tuple[str, str, str]:
     """
     raw = "sxa_live_" + secrets.token_urlsafe(32)
     key_hash = hashlib.sha256(raw.encode()).hexdigest()
-    key_prefix = raw[:20]
+    key_prefix = raw[:12]  # fits existing String(12) DB column
     return raw, key_hash, key_prefix
 
 
