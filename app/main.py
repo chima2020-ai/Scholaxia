@@ -78,3 +78,15 @@ async def live_class_ws(
 @app.get("/health")
 async def health():
     return {"status": "ok", "app": settings.APP_NAME}
+
+
+@app.get("/db-check")
+async def db_check(db: AsyncSession = Depends(get_db)):
+    """Check if DB tables exist and are writable."""
+    from sqlalchemy import text
+    try:
+        result = await db.execute(text("SELECT tablename FROM pg_tables WHERE schemaname='public'"))
+        tables = [row[0] for row in result.fetchall()]
+        return {"status": "ok", "tables": sorted(tables), "count": len(tables)}
+    except Exception as e:
+        return {"status": "error", "detail": str(e)}
