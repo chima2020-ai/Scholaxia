@@ -215,7 +215,65 @@ async def _infer_local(prompt: str) -> str:
 
 # ── Public interface ──────────────────────────────────────────────────────────
 
-async def run_inference(prompt: str, conversation_history: list = None,
+async def _infer_openai(prompt: str, conversation_history: list = None) -> str:
+    """OpenAI GPT-4o — highest quality, paid."""
+    messages = []
+    if conversation_history:
+        for msg in conversation_history[-8:]:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content})
+    messages.append({"role": "user", "content": prompt})
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": settings.OPENAI_MODEL,
+                "messages": messages,
+                "max_tokens": settings.AI_MAX_TOKENS,
+                "temperature": settings.AI_TEMPERATURE,
+            },
+        )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"].strip()
+
+
+async def _infer_deepseek(prompt: str, conversation_history: list = None) -> str:
+    """DeepSeek — very smart, cheap, OpenAI-compatible API."""
+    messages = []
+    if conversation_history:
+        for msg in conversation_history[-8:]:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content})
+    messages.append({"role": "user", "content": prompt})
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            "https://api.deepseek.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {settings.DEEPSEEK_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": settings.DEEPSEEK_MODEL,
+                "messages": messages,
+                "max_tokens": settings.AI_MAX_TOKENS,
+                "temperature": settings.AI_TEMPERATURE,
+            },
+        )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"].strip()
+
+
+
                         image_base64: str = None) -> str:
     backend = settings.AI_BACKEND.lower()
 
@@ -232,3 +290,108 @@ async def run_inference(prompt: str, conversation_history: list = None,
         return await _infer_local(prompt)
     else:
         raise ValueError(f"Unknown AI_BACKEND: '{backend}'")
+
+async def _infer_openai(prompt: str, conversation_history: list = None) -> str:
+    """OpenAI GPT-4o — highest quality."""
+    messages = []
+    if conversation_history:
+        for msg in conversation_history[-8:]:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content})
+    messages.append({"role": "user", "content": prompt})
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {settings.OPENAI_API_KEY}", "Content-Type": "application/json"},
+            json={"model": settings.OPENAI_MODEL, "messages": messages,
+                  "max_tokens": settings.AI_MAX_TOKENS, "temperature": settings.AI_TEMPERATURE},
+        )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"].strip()
+
+
+async def _infer_deepseek(prompt: str, conversation_history: list = None) -> str:
+    """DeepSeek — very smart, cheap, OpenAI-compatible."""
+    messages = []
+    if conversation_history:
+        for msg in conversation_history[-8:]:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content})
+    messages.append({"role": "user", "content": prompt})
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            "https://api.deepseek.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {settings.DEEPSEEK_API_KEY}", "Content-Type": "application/json"},
+            json={"model": settings.DEEPSEEK_MODEL, "messages": messages,
+                  "max_tokens": settings.AI_MAX_TOKENS, "temperature": settings.AI_TEMPERATURE},
+        )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"].strip()
+
+
+async def run_inference(prompt: str, conversation_history: list = None,
+                        image_base64: str = None, subject: str = "") -> str:
+    """
+    Smart AI routing based on subject type.
+
+    Math/Physics/Chemistry → DeepSeek Reasoner (best for calculations)
+    History/Literature/Research → OpenAI GPT-4o (best for research)
+    Everything else → Gemini 2.5 Pro (best for deep explanations)
+    Automatic fallback if any provider fails or hits limits.
+    """
+    errors = []
+
+    math_subjects = {"mathematics", "further mathematics", "physics", "chemistry",
+                     "statistics", "engineering", "calculus", "algebra", "trigonometry",
+                     "further maths", "additional maths"}
+    research_subjects = {"history", "government", "literature", "economics",
+                         "geography", "civic education", "english", "general knowledge",
+                         "social studies", "christian religious studies", "islamic religious studies"}
+
+    subject_lower = subject.lower() if subject else ""
+    is_math = any(s in subject_lower for s in math_subjects)
+    is_research = any(s in subject_lower for s in research_subjects)
+
+    available = {
+        "gemini": bool(settings.GEMINI_API_KEY),
+        "openai": bool(settings.OPENAI_API_KEY),
+        "deepseek": bool(settings.DEEPSEEK_API_KEY),
+        "groq": bool(settings.GROQ_API_KEY),
+    }
+
+    if is_math:
+        # Math → DeepSeek Reasoner first
+        order = ["deepseek", "gemini", "openai", "groq"]
+    elif is_research:
+        # Research → OpenAI first
+        order = ["openai", "gemini", "deepseek", "groq"]
+    else:
+        # Default → Gemini first (deep explanations)
+        order = ["gemini", "deepseek", "openai", "groq"]
+
+    fns = {
+        "gemini":   lambda: _infer_gemini(prompt, conversation_history, image_base64),
+        "openai":   lambda: _infer_openai(prompt, conversation_history),
+        "deepseek": lambda: _infer_deepseek(prompt, conversation_history),
+        "groq":     lambda: _infer_groq(prompt, conversation_history, image_base64),
+    }
+
+    providers = [(name, fns[name]) for name in order if available.get(name)]
+
+    if not providers:
+        raise ValueError("No AI provider configured.")
+
+    for name, fn in providers:
+        try:
+            return await fn()
+        except Exception as e:
+            errors.append(f"{name}: {str(e)[:80]}")
+            continue
+
+    raise Exception(f"All AI providers failed: {'; '.join(errors)}")

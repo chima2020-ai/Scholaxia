@@ -61,6 +61,14 @@ class Settings(BaseSettings):
     GEMINI_MODEL: str = "gemini-2.5-pro"          # smartest — Google's latest
     GEMINI_FLASH_MODEL: str = "gemini-2.5-flash"  # fast fallback
 
+    # OpenAI (GPT-4o — research & general knowledge)
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o"
+
+    # DeepSeek (deepseek-reasoner — math calculations & logical reasoning)
+    DEEPSEEK_API_KEY: str = ""
+    DEEPSEEK_MODEL: str = "deepseek-reasoner"
+
     # ElevenLabs (Sia Voice)
     ELEVENLABS_API_KEY: str = ""
     ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"

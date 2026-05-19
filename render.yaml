@@ -28,6 +28,14 @@ services:
         value: gemini-2.5-pro
       - key: GEMINI_FLASH_MODEL
         value: gemini-2.5-flash
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o
+      - key: DEEPSEEK_API_KEY
+        sync: false
+      - key: DEEPSEEK_MODEL
+        value: deepseek-chat
       - key: GROQ_API_KEY
         sync: false
       - key: GROQ_MODEL
