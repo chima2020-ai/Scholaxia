@@ -1,4 +1,4 @@
-# Scholaxia — Local Testing Guide
+# Scholaxia — Local Testing Gu00ide
 
 ## Prerequisites
 

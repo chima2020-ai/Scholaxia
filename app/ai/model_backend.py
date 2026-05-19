@@ -1,10 +1,13 @@
 """
 Scholaxia AI Model Backend — Sia
 ----------------------------------
-Supports three backends via AI_BACKEND env var:
-  1. "groq"    — Groq cloud API (FREE, fast) ← default
-  2. "hosted"  — Self-hosted (Ollama, vLLM, TGI)
-  3. "local"   — HuggingFace Transformers in-process
+Supports multiple backends via AI_BACKEND env var:
+  "gemini"   — Google Gemini (1,500 req/day free) ← primary
+  "openai"   — OpenAI GPT-4o (paid, highest quality)
+  "deepseek" — DeepSeek (smart + cheap)
+  "groq"     — Groq (fallback)
+  "hosted"   — Self-hosted (Ollama, vLLM)
+  "local"    — HuggingFace in-process
 """
 
 import asyncio
@@ -12,11 +15,132 @@ import httpx
 from app.core.config import settings
 
 
+# ── Gemini ────────────────────────────────────────────────────────────────────
+
+async def _infer_gemini(prompt: str, conversation_history: list = None,
+                        image_base64: str = None) -> str:
+    """Google Gemini — 1,500 req/day free, 15 req/min, 1M context."""
+    model = settings.GEMINI_MODEL
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+
+    contents = []
+
+    # Add conversation history
+    if conversation_history:
+        for msg in conversation_history[-6:]:
+            role = "user" if msg.get("role") == "user" else "model"
+            contents.append({"role": role, "parts": [{"text": msg.get("content", "")}]})
+
+    # Current message
+    if image_base64:
+        contents.append({
+            "role": "user",
+            "parts": [
+                {"inline_data": {"mime_type": "image/jpeg", "data": image_base64}},
+                {"text": prompt}
+            ]
+        })
+    else:
+        contents.append({"role": "user", "parts": [{"text": prompt}]})
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            url,
+            params={"key": settings.GEMINI_API_KEY},
+            json={
+                "contents": contents,
+                "generationConfig": {
+                    "maxOutputTokens": settings.AI_MAX_TOKENS,
+                    "temperature": settings.AI_TEMPERATURE,
+                },
+            },
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+
+# ── OpenAI ────────────────────────────────────────────────────────────────────
+
+async def _infer_openai(prompt: str, conversation_history: list = None,
+                        image_base64: str = None) -> str:
+    """OpenAI GPT-4o — highest quality, paid."""
+    messages = []
+
+    if conversation_history:
+        for msg in conversation_history[-6:]:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content})
+
+    if image_base64:
+        messages.append({
+            "role": "user",
+            "content": [
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}},
+                {"type": "text", "text": prompt}
+            ]
+        })
+    else:
+        messages.append({"role": "user", "content": prompt})
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": settings.OPENAI_MODEL,
+                "messages": messages,
+                "max_tokens": settings.AI_MAX_TOKENS,
+                "temperature": settings.AI_TEMPERATURE,
+            },
+        )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"].strip()
+
+
+# ── DeepSeek ──────────────────────────────────────────────────────────────────
+
+async def _infer_deepseek(prompt: str, conversation_history: list = None) -> str:
+    """DeepSeek — very smart, cheap."""
+    messages = []
+
+    if conversation_history:
+        for msg in conversation_history[-6:]:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content})
+
+    messages.append({"role": "user", "content": prompt})
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        response = await client.post(
+            "https://api.deepseek.com/chat/completions",
+            headers={
+                "Authorization": f"Bearer {settings.DEEPSEEK_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": settings.DEEPSEEK_MODEL,
+                "messages": messages,
+                "max_tokens": settings.AI_MAX_TOKENS,
+                "temperature": settings.AI_TEMPERATURE,
+            },
+        )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"].strip()
+
+
 # ── Groq ──────────────────────────────────────────────────────────────────────
 
 async def _infer_groq(prompt: str, conversation_history: list = None,
                       image_base64: str = None) -> str:
-    """Calls Groq API with automatic retry on 429 rate limit."""
+    """Groq — fast free tier, 30 req/min limit."""
     messages = []
 
     if conversation_history:
@@ -54,24 +178,33 @@ async def _infer_groq(prompt: str, conversation_history: list = None,
                     "temperature": settings.AI_TEMPERATURE,
                 },
             )
-
             if response.status_code == 429:
                 retry_after = int(response.headers.get("retry-after", 10))
-                wait = min(retry_after, 30)
-                await asyncio.sleep(wait)
+                await asyncio.sleep(min(retry_after, 30))
                 continue
-
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"].strip()
 
-    raise Exception("Groq rate limit exceeded. Please try again in a moment.")
+    raise Exception("Groq rate limit exceeded.")
 
 
-# ── Hosted (Ollama / vLLM / TGI) ─────────────────────────────────────────────
+# ── Hosted ────────────────────────────────────────────────────────────────────
 
 async def _infer_hosted(prompt: str) -> str:
     async with httpx.AsyncClient(timeout=60.0) as client:
-        if settings.AI_HOSTED_ENDPOINT_TYPE == "chat":
+        if settings.AI_HOSTED_ENDPOINT_TYPE == "ollama":
+            response = await client.post(
+                f"{settings.AI_HOSTED_BASE_URL}/api/generate",
+                json={
+                    "model": settings.AI_HOSTED_MODEL_NAME,
+                    "prompt": prompt,
+                    "stream": False,
+                    "options": {"num_predict": settings.AI_MAX_TOKENS, "temperature": settings.AI_TEMPERATURE},
+                },
+            )
+            response.raise_for_status()
+            return response.json()["response"].strip()
+        else:
             response = await client.post(
                 f"{settings.AI_HOSTED_BASE_URL}/v1/chat/completions",
                 headers={"Authorization": f"Bearer {settings.AI_HOSTED_API_KEY}"},
@@ -85,34 +218,8 @@ async def _infer_hosted(prompt: str) -> str:
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"].strip()
 
-        elif settings.AI_HOSTED_ENDPOINT_TYPE == "ollama":
-            response = await client.post(
-                f"{settings.AI_HOSTED_BASE_URL}/api/generate",
-                json={
-                    "model": settings.AI_HOSTED_MODEL_NAME,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {
-                        "num_predict": settings.AI_MAX_TOKENS,
-                        "temperature": settings.AI_TEMPERATURE,
-                    },
-                },
-            )
-            response.raise_for_status()
-            return response.json()["response"].strip()
 
-        else:
-            response = await client.post(
-                settings.AI_HOSTED_BASE_URL,
-                headers={"Authorization": f"Bearer {settings.AI_HOSTED_API_KEY}"},
-                json={"prompt": prompt, "max_tokens": settings.AI_MAX_TOKENS},
-            )
-            response.raise_for_status()
-            data = response.json()
-            return (data.get("result") or data.get("text") or data.get("output") or "").strip()
-
-
-# ── Local (HuggingFace in-process) ───────────────────────────────────────────
+# ── Local ─────────────────────────────────────────────────────────────────────
 
 _local_pipeline = None
 
@@ -128,8 +235,6 @@ def _load_local_pipeline():
             max_new_tokens=settings.AI_MAX_TOKENS,
             do_sample=True,
             temperature=settings.AI_TEMPERATURE,
-            top_p=0.9,
-            repetition_penalty=1.1,
         )
     return _local_pipeline
 
@@ -137,8 +242,7 @@ def _load_local_pipeline():
 async def _infer_local(prompt: str) -> str:
     pipe = await asyncio.get_event_loop().run_in_executor(None, _load_local_pipeline)
     result = await asyncio.get_event_loop().run_in_executor(None, lambda: pipe(prompt))
-    generated = result[0]["generated_text"]
-    return generated[len(prompt):].strip()
+    return result[0]["generated_text"][len(prompt):].strip()
 
 
 # ── Public interface ──────────────────────────────────────────────────────────
@@ -146,11 +250,18 @@ async def _infer_local(prompt: str) -> str:
 async def run_inference(prompt: str, conversation_history: list = None,
                         image_base64: str = None) -> str:
     backend = settings.AI_BACKEND.lower()
-    if backend == "groq":
+
+    if backend == "gemini":
+        return await _infer_gemini(prompt, conversation_history, image_base64)
+    elif backend == "openai":
+        return await _infer_openai(prompt, conversation_history, image_base64)
+    elif backend == "deepseek":
+        return await _infer_deepseek(prompt, conversation_history)
+    elif backend == "groq":
         return await _infer_groq(prompt, conversation_history, image_base64)
     elif backend == "hosted":
         return await _infer_hosted(prompt)
     elif backend == "local":
         return await _infer_local(prompt)
     else:
-        raise ValueError(f"Unknown AI_BACKEND: '{backend}'. Use 'groq', 'hosted', or 'local'.")
+        raise ValueError(f"Unknown AI_BACKEND: '{backend}'")

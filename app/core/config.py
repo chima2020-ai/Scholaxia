@@ -50,13 +50,20 @@ class Settings(BaseSettings):
     AI_TEMPERATURE: float = 0.7
 
     # Gemini (Google AI — primary)
-    # Free: 1,500 req/day, 15 req/min — get key at https://aistudio.google.com
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-2.0-flash"
 
     # Groq (fallback)
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
+
+    # OpenAI (GPT-4o — highest quality, paid)
+    OPENAI_API_KEY: str = ""
+    OPENAI_MODEL: str = "gpt-4o"
+
+    # DeepSeek (smart + cheap)
+    DEEPSEEK_API_KEY: str = ""
+    DEEPSEEK_MODEL: str = "deepseek-chat"
 
     # Hosted inference server
     AI_HOSTED_BASE_URL: str = "http://localhost:11434"
