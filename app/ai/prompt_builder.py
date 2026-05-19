@@ -2,159 +2,192 @@
 Sia — Scholaxia Intelligent Assistant
 Master Prompt Builder
 
-Architecture:
-1. Input classifier — detect what the student actually sent before responding
-2. Student memory injection — weak topics, strong topics, learning style, confidence
-3. Socratic method — guide to understanding, don't dump answers
-4. Energy matching — casual greeting gets casual response, not a lecture
-5. Curriculum grounding — WAEC, JAMB, NECO, Cambridge
+Designed from first principles of:
+- Conversational AI design
+- Socratic pedagogy
+- Nigerian educational context
+- Real tutoring psychology
 """
 
 import re
 
-# ── Input Type Classifier ─────────────────────────────────────────────────────
+# ── Casual phrase detection ───────────────────────────────────────────────────
 
-GREETING_PATTERNS = [
-    r"^(hi+|hello+|hey+|sup|how far|how u|how are|how you|how na|e don|wetin|naa|nah|"
-    r"oya|abeg|pls|please|thanks|thank you|na wa|chai|haba|ehen|okay|ok|alright|cool|"
-    r"nice|great|wow|good morning|good afternoon|good evening|morning|afternoon|evening|"
-    r"yo|wassup|what's up|whats up|how body|how life|how things|e don do|how day|"
-    r"how u day|how u dey|i dey|i day|fine|i'm fine|am fine)[\s\W]*$",
+CASUAL_PHRASES = [
+    "am good", "i am good", "i'm good", "doing good", "doing well",
+    "not bad", "all good", "i dey fine", "fine o", "i dey",
+    "how are you", "how r u", "how are u", "how u doing",
+    "good morning", "good afternoon", "good evening", "good night",
+    "what's up", "whats up", "how far", "how u dey", "how u day",
+    "e don do", "wetin dey", "na wa o", "i dey o",
 ]
 
-def classify_input(text: str) -> str:
-    """
-    Returns: 'greeting' | 'question' | 'answer' | 'topic' | 'casual'
-    This determines HOW Sia responds before building the prompt.
-    """
+GREETING_PATTERNS = [
+    r"^(hi+|hello+|hey+|sup|naa|nah|oya|okay|ok|alright|cool|nice|great|wow|"
+    r"yo|wassup|morning|afternoon|evening|thanks|thank you|abeg)[\s\W]*$",
+]
+
+
+def classify_input(text: str, has_history: bool = False) -> str:
     lower = text.lower().strip()
 
-    # Short casual messages
-    if len(lower) <= 20:
+    # In a conversation, short responses are almost always replies to Sia
+    if has_history and len(lower) < 80:
+        return "conversation_turn"
+
+    for phrase in CASUAL_PHRASES:
+        if phrase in lower:
+            return "greeting"
+
+    if len(lower) <= 30:
         for pattern in GREETING_PATTERNS:
             if re.match(pattern, lower, re.IGNORECASE):
                 return "greeting"
 
-    # Looks like an answer to a previous question
     if lower.startswith(("i think", "i believe", "the answer is", "it is", "it's",
-                          "because", "since", "that means", "so the")):
+                          "because", "since", "that means", "so the", "yes", "no",
+                          "true", "false", "correct", "wrong", "maybe")):
         return "answer"
 
-    # Looks like a question
     if "?" in text or lower.startswith(("what", "why", "how", "when", "where",
                                          "who", "which", "explain", "define",
-                                         "solve", "calculate", "find", "prove")):
+                                         "solve", "calculate", "find", "prove",
+                                         "teach me", "tell me", "show me")):
         return "question"
 
-    # Short casual non-greeting
-    if len(lower) <= 30:
+    if len(lower) <= 40:
         return "casual"
 
     return "topic"
 
 
 def detect_language_from_text(text: str) -> str:
-    """
-    Auto-detect the language the student is writing in.
-    Sia ALWAYS responds in the same language the student used — no exceptions.
-    Only triggers non-English if there are CLEAR, UNAMBIGUOUS markers.
-    """
     lower = text.lower().strip()
 
-    # Must be at least 3 chars and not pure English to trigger language detection
-    # Require MULTIPLE markers or a very specific phrase to avoid false positives
+    pidgin = ["how far", "how u dey", "how u day", "e don do", "wetin dey",
+              "abeg na", "na wa o", "i dey o", "wahala dey", "no be so",
+              "dem say", "make u", "abi o", "shey you", "how body"]
+    if any(p in lower for p in pidgin):
+        return "Respond fully in Nigerian Pidgin English."
 
-    # Nigerian Pidgin — require specific multi-word phrases only
-    pidgin_phrases = [
-        "how far", "how u dey", "how u day", "e don do", "wetin dey",
-        "abeg na", "na wa o", "i dey o", "wahala dey", "no be so",
-        "dem say", "make u", "abi o", "shey you", "comot here",
-        "how body", "how life dey", "e don happen"
-    ]
-    if any(phrase in lower for phrase in pidgin_phrases):
-        return "Respond fully in Nigerian Pidgin English. Match the student's Pidgin energy exactly."
-
-    # Yoruba — specific phrases
-    yoruba_phrases = ["bawo ni", "ẹ kaaro", "ẹ kaasan", "ẹ kaale", "jẹ ki a",
-                      "mo fẹ", "kini iyẹn", "e kaaro", "e kaasan"]
-    if any(phrase in lower for phrase in yoruba_phrases):
+    yoruba = ["bawo ni", "ẹ kaaro", "ẹ kaasan", "ẹ kaale", "jẹ ki a", "mo fẹ", "e kaaro"]
+    if any(p in lower for p in yoruba):
         return "Respond fully in Yoruba language."
 
-    # Igbo — specific phrases
-    igbo_phrases = ["kedu ka", "ọ dị mma", "biko nna", "biko nne", "gịnị mere",
-                    "kedu ihe", "ọ bụ ezie"]
-    if any(phrase in lower for phrase in igbo_phrases):
+    igbo = ["kedu ka", "ọ dị mma", "biko nna", "biko nne", "gịnị mere", "kedu ihe"]
+    if any(p in lower for p in igbo):
         return "Respond fully in Igbo language."
 
-    # Hausa — specific phrases
-    hausa_phrases = ["yaya kake", "ina kwana", "ina wuni", "sannu da", "don allah",
-                     "yaushe za", "ina so"]
-    if any(phrase in lower for phrase in hausa_phrases):
+    hausa = ["yaya kake", "ina kwana", "ina wuni", "sannu da", "don allah", "yaushe za"]
+    if any(p in lower for p in hausa):
         return "Respond fully in Hausa language."
 
-    # French — specific phrases
-    french_phrases = ["bonjour", "comment ça", "qu'est-ce", "pourquoi est", "je veux",
-                      "s'il vous plaît", "merci beaucoup", "c'est quoi"]
-    if any(phrase in lower for phrase in french_phrases):
+    french = ["bonjour", "comment ça", "qu'est-ce", "je veux", "s'il vous plaît", "merci beaucoup"]
+    if any(p in lower for p in french):
         return "Respond fully in French language."
 
-    # Arabic script detection
     if any('\u0600' <= c <= '\u06ff' for c in text):
         return "Respond fully in Arabic language."
 
-    # Default: the student is writing in English — respond in English
     return ""
 
 
+# ── The Master System Prompt ──────────────────────────────────────────────────
 
+MASTER_SYSTEM_PROMPT = """You are Sia — the Scholaxia Intelligent Assistant.
 
-MASTER_SYSTEM_PROMPT = """You are Sia — an elite AI tutor. You are sharp, direct, and brilliant.
+You are not a search engine. You are not a chatbot. You are a TEACHER.
 
-GOLDEN RULE: Get straight to the point. No long intros. No "Great question!" No padding.
+The difference between a teacher and a chatbot:
+- A chatbot answers questions.
+- A teacher builds understanding, checks it, corrects it, and builds confidence.
 
-SPECIAL CASE — If asked "what languages do you speak" or similar:
-List ALL 132+ languages grouped by region. Be proud of this capability.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+YOUR PERSONALITY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+You are warm, direct, and brilliant. You speak like a smart older sibling who happens to know everything — not like a textbook, not like a robot.
 
-When a student asks something educational:
-1. Give the definition in 1-2 sentences max
-2. Give ONE real-life Nigerian example
-3. Show a worked example if it's math/science
-4. Ask ONE sharp question to check understanding
+You know Nigerian culture deeply. You use Nigerian examples naturally: NEPA, danfo, jollof rice, Lagos traffic, market prices, football. These make abstract concepts real.
 
-That's it. Short. Clear. Powerful.
+You call the student by their first name — naturally, not robotically. Once or twice per response, not every sentence.
 
-RESPONSE FORMAT — follow this strictly:
+You match the student's energy and language:
+- They write in English → you respond in English
+- They write in Pidgin → you respond in Pidgin
+- They write in Yoruba → you respond in Yoruba
+- They write in Igbo → you respond in Igbo
+- They write in Hausa → you respond in Hausa
+- They mix languages → you match their mix
 
-For concepts (e.g. "what is motion?"):
-**Definition:** [1-2 sentences]
-**Example:** [one Nigerian real-life example]
-**Key point:** [the most important thing to remember]
-**Try this:** [one question for the student]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+READING THE CONVERSATION — MOST IMPORTANT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Before you respond to ANYTHING, read the conversation history carefully.
 
-For problems (e.g. "solve 2x + 5 = 15"):
-**Step 1:** [action + why]
-**Step 2:** [action + why]
-...
-**Answer:** [final answer]
-**Try this:** [similar problem]
+The conversation history shows what was said before. Use it.
 
-For explanations (e.g. "explain photosynthesis"):
-**What it is:** [1 sentence]
-**How it works:** [3-4 bullet points max]
-**Real example:** [Nigerian context]
-**Exam tip:** [what WAEC/JAMB tests on this]
-**Try this:** [one question]
+SCENARIO 1 — You asked a question, student is answering:
+Sia: "Is 'school' a noun?"
+Student: "yes"
+→ You respond: "Correct! School is a noun — it's a place. Now, is 'running' a noun or a verb?"
+→ You do NOT start a new lesson about nouns from scratch.
 
-RULES:
-- Never write more than 200 words unless it's a complex calculation
-- Never start with "Great question" or "I'm happy to help" or any filler
-- Never repeat yourself
-- Always end with one question
-- Use the student's name naturally (not every sentence — just once or twice)
-- Match the student's language (Pidgin → Pidgin, Yoruba → Yoruba, English → English)
-- For greetings ("how far", "hi", "sup") — respond naturally and briefly, don't lecture
+SCENARIO 2 — Student is continuing a topic:
+Sia: "Newton's 3rd law says every action has an equal and opposite reaction."
+Student: "so if i push a wall the wall pushes back?"
+→ You respond: "Exactly right! That's a perfect example. The wall pushes back with the same force..."
+→ You do NOT treat this as a new question about walls.
 
-Student name: {student_name}
+SCENARIO 3 — Student gives a wrong answer:
+Sia: "What is the capital of Nigeria?"
+Student: "Lagos"
+→ You respond: "Good try! Lagos is the largest city, but the capital is actually Abuja. It became the capital in 1991..."
+→ You do NOT ignore their answer and start a new lesson.
+
+SCENARIO 4 — Casual greeting:
+Student: "am good how are u"
+→ You respond: "I dey o! 😄 Ready to help whenever you are. What are we studying today?"
+→ You do NOT explain what a greeting is. You do NOT start a lesson.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+HOW YOU TEACH
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+When a student asks an educational question:
+
+1. ANSWER DIRECTLY — Give the definition or answer in 1-2 sentences. No preamble.
+
+2. MAKE IT REAL — Give one Nigerian real-life example that makes it concrete.
+
+3. SHOW THE WORK — For math/science, show the steps. For concepts, show the logic.
+
+4. CHECK UNDERSTANDING — End with ONE sharp question that requires the student to APPLY what they just learned. Not "did you understand?" — ask something specific.
+
+5. RESPOND TO THEIR ANSWER — When they answer your question, evaluate it properly:
+   - Correct: "Yes! [brief reinforcement]. Now let's go deeper: [harder question]"
+   - Partially correct: "You're on the right track — [what's right]. But [what's missing]..."
+   - Wrong: "Good attempt! Here's where it went sideways: [gentle correction]. [re-explain simply]. Try this: [easier version]"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RESPONSE RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Maximum 150 words for explanations (unless it's a complex calculation)
+- NEVER start with: "Great question!", "I'm happy to help", "Certainly!", "Of course!"
+- NEVER explain what a greeting is when someone greets you
+- NEVER repeat yourself
+- NEVER ignore the conversation history
+- For greetings/casual chat: respond naturally, no question needed
+- For educational content: always end with one question
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+WHAT MAKES YOU BETTER THAN CHATGPT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ChatGPT answers. You TEACH.
+ChatGPT forgets context. You REMEMBER the conversation.
+ChatGPT uses generic examples. You use NIGERIAN examples.
+ChatGPT doesn't check understanding. You ALWAYS check.
+ChatGPT doesn't know WAEC/JAMB patterns. You DO.
+
+Student: {student_name}
 Subject: {subject}
 Level: {level}
 """
@@ -162,17 +195,17 @@ Level: {level}
 # ── Level Profiles ────────────────────────────────────────────────────────────
 
 LEVEL_PROFILES = {
-    "PRIMARY":  {"depth": "beginner",           "exam": "Primary school",  "style": "Use very simple words, short sentences, Nigerian daily life examples. Make it feel like play."},
-    "JSS1":     {"depth": "beginner",           "exam": "JSS",             "style": "Simple and encouraging. One idea at a time. Celebrate every win."},
-    "JSS2":     {"depth": "beginner-mid",       "exam": "JSS",             "style": "Build on prior knowledge. Introduce terms with immediate explanation."},
-    "JSS3":     {"depth": "elementary",         "exam": "JSS/SS bridge",   "style": "Start explaining WHY. Prepare for SS-level thinking."},
-    "SS1":      {"depth": "intermediate",       "exam": "WAEC/NECO",       "style": "Explain mechanisms and causes. Full worked examples. Connect to real world."},
-    "SS2":      {"depth": "intermediate-deep",  "exam": "WAEC/NECO",       "style": "Deep theory + application. Multiple examples. Show common mistakes."},
-    "SS3":      {"depth": "advanced",           "exam": "WAEC/NECO/JAMB",  "style": "Full exam-ready depth. Multiple approaches. Examiner traps. Exam technique."},
-    "JAMB":     {"depth": "exam-focused",       "exam": "JAMB",            "style": "JAMB mastery. Traps, distractors, elimination strategies. Past question patterns."},
-    "WAEC":     {"depth": "exam-focused",       "exam": "WAEC",            "style": "Theory + practical. Marking scheme awareness. Essay technique."},
-    "NECO":     {"depth": "exam-focused",       "exam": "NECO",            "style": "NECO patterns. Maximum marks efficiently."},
-    "CAMBRIDGE":{"depth": "advanced",           "exam": "Cambridge",       "style": "Command words. Mark schemes. Extended response technique."},
+    "PRIMARY":   {"depth": "beginner",          "exam": "Primary"},
+    "JSS1":      {"depth": "beginner",          "exam": "JSS"},
+    "JSS2":      {"depth": "beginner-mid",      "exam": "JSS"},
+    "JSS3":      {"depth": "elementary",        "exam": "JSS/SS bridge"},
+    "SS1":       {"depth": "intermediate",      "exam": "WAEC/NECO"},
+    "SS2":       {"depth": "intermediate-deep", "exam": "WAEC/NECO"},
+    "SS3":       {"depth": "advanced",          "exam": "WAEC/NECO/JAMB"},
+    "JAMB":      {"depth": "exam-focused",      "exam": "JAMB"},
+    "WAEC":      {"depth": "exam-focused",      "exam": "WAEC"},
+    "NECO":      {"depth": "exam-focused",      "exam": "NECO"},
+    "CAMBRIDGE": {"depth": "advanced",          "exam": "Cambridge"},
 }
 
 # ── Language Instructions ─────────────────────────────────────────────────────
@@ -249,7 +282,7 @@ LANGUAGE_INSTRUCTIONS = {
 SUPPORTED_LANGUAGES = list(LANGUAGE_INSTRUCTIONS.keys())
 
 
-# ── Prompt Builder Core ───────────────────────────────────────────────────────
+# ── Core context builder ──────────────────────────────────────────────────────
 
 def _build_context(student_name: str, subject: str, education_level: str,
                    language: str, student_memory: dict = None,
@@ -257,10 +290,7 @@ def _build_context(student_name: str, subject: str, education_level: str,
     level_key = education_level.upper()
     profile = LEVEL_PROFILES.get(level_key, LEVEL_PROFILES["SS1"])
 
-    if raw_input:
-        lang_instruction = detect_language_from_text(raw_input)
-    else:
-        lang_instruction = LANGUAGE_INSTRUCTIONS.get(language.lower(), "")
+    lang_instruction = detect_language_from_text(raw_input) if raw_input else LANGUAGE_INSTRUCTIONS.get(language.lower(), "")
 
     system = MASTER_SYSTEM_PROMPT.replace("{student_name}", student_name)
     system = system.replace("{subject}", subject)
@@ -268,36 +298,46 @@ def _build_context(student_name: str, subject: str, education_level: str,
 
     parts = [system]
     if lang_instruction:
-        parts.append(f"Language rule: {lang_instruction}")
+        parts.append(f"\nLanguage rule: {lang_instruction}")
 
     return "\n".join(parts)
 
 
-# ── Main Prompt (default ask) ─────────────────────────────────────────────────
+# ── Main prompt — the heart of Sia ───────────────────────────────────────────
 
 def build_prompt(question: str, subject: str, education_level: str,
                  language: str, student_name: str = "there",
-                 student_memory: dict = None) -> str:
+                 student_memory: dict = None,
+                 conversation_history: list = None) -> str:
+    """
+    The main Sia prompt. Conversation history is injected so Sia
+    always knows what was said before and responds in context.
+    """
     context = _build_context(student_name, subject, education_level, language,
                              student_memory, raw_input=question)
-    input_type = classify_input(question)
 
-    if input_type == "greeting":
-        instruction = f"Casual greeting — respond naturally and briefly. Match their energy. Don't lecture."
-    elif input_type == "answer":
-        instruction = f"Student is answering. Evaluate: correct → praise + harder question. Wrong → diagnose + re-teach simply."
-    else:
-        instruction = f"Teach this directly. Definition → example → worked solution if needed → one check question. No padding."
+    has_history = bool(conversation_history and len(conversation_history) > 0)
 
-    return f"""{context}
+    # Build conversation history block
+    history_block = ""
+    if has_history:
+        lines = []
+        for msg in conversation_history[-8:]:  # last 8 messages
+            role = "Sia" if msg.get("role") == "assistant" else student_name
+            content = str(msg.get("content", ""))[:300]
+            lines.append(f"{role}: {content}")
+        history_block = "\n\n--- CONVERSATION HISTORY (read this before responding) ---\n"
+        history_block += "\n".join(lines)
+        history_block += "\n--- END OF HISTORY ---"
 
-Student: {question}
+    return f"""{context}{history_block}
 
-{instruction}
-"""
+{student_name}: {question}
+
+Sia:"""
 
 
-# ── Explain ───────────────────────────────────────────────────────────────────
+# ── Specialised prompt builders ───────────────────────────────────────────────
 
 def build_explain_prompt(topic: str, subject: str, education_level: str,
                          language: str, student_name: str,
@@ -306,33 +346,17 @@ def build_explain_prompt(topic: str, subject: str, education_level: str,
                              student_memory, raw_input=topic)
     return f"""{context}
 
-Task: Teach {student_name} "{topic}" so deeply they will never forget it.
+{student_name} wants to understand: "{topic}"
 
-Follow this exact structure:
+Teach it like this:
+1. One-sentence definition in plain language
+2. The WHY — why does it work this way?
+3. One Nigerian real-life example
+4. Worked example if it's math/science
+5. One question to check understanding
 
-1. HOOK — Start with a surprising fact, a question, or a relatable scenario. NOT a definition.
+Sia:"""
 
-2. ACTIVATE PRIOR KNOWLEDGE — Ask: "Before I explain, {student_name} — what do you already know about this?"
-   (Then continue as if they answered with basic knowledge)
-
-3. SIMPLE EXPLANATION — One sentence in plain language. No jargon.
-
-4. THE WHY — Why does this work this way? What's the underlying principle?
-
-5. NIGERIAN ANALOGY — Connect it to something from Nigerian daily life.
-
-6. STEP-BY-STEP BREAKDOWN — Break the concept into clear numbered steps.
-
-7. WORKED EXAMPLE — Full example with every step explained.
-
-8. EXAM CONNECTION — How does WAEC/JAMB/NECO test this? What traps should {student_name} avoid?
-
-9. MASTERY CHECK — End with ONE question that requires {student_name} to APPLY the concept.
-   Tell them: "Think about it before answering — I want to see your reasoning."
-"""
-
-
-# ── Solve ─────────────────────────────────────────────────────────────────────
 
 def build_solve_prompt(question: str, subject: str, education_level: str,
                        language: str, student_name: str,
@@ -341,22 +365,13 @@ def build_solve_prompt(question: str, subject: str, education_level: str,
                              student_memory, raw_input=question)
     return f"""{context}
 
-Task: Help {student_name} solve this — but more importantly, help them understand HOW to solve it.
+{student_name} needs help solving: {question}
 
-Problem: {question}
+Show every step. Explain WHY each step is taken — not just what.
+End with: "Now try this similar one: [give a slightly different problem]"
 
-Structure:
-1. IDENTIFY — "What type of problem is this? What do we know? What are we finding?"
-2. THINK ALOUD — Before solving, ask: "How would you approach this, {student_name}?"
-3. STEP-BY-STEP SOLUTION — Every step with explanation of WHY
-4. KEY INSIGHT — "The pattern here is: whenever you see [X], you do [Y]"
-5. SIMILAR PROBLEM — Give {student_name} a slightly different version to try independently
+Sia:"""
 
-Goal: After this, {student_name} can solve similar problems without help.
-"""
-
-
-# ── Evaluate ──────────────────────────────────────────────────────────────────
 
 def build_evaluate_prompt(question: str, student_answer: str, subject: str,
                           education_level: str, language: str, student_name: str,
@@ -365,34 +380,16 @@ def build_evaluate_prompt(question: str, student_answer: str, subject: str,
                              student_memory, raw_input=student_answer)
     return f"""{context}
 
-Task: Evaluate {student_name}'s answer like a great teacher.
+Question that was asked: {question}
+{student_name}'s answer: {student_answer}
 
-Question: {question}
-{student_name}'s Answer: {student_answer}
+Evaluate the answer:
+- If correct: praise specifically, reinforce the concept, give a harder follow-up
+- If partially correct: acknowledge what's right, fix the gap, ask them to try again
+- If wrong: be gentle, diagnose the mistake, re-explain simply, give an easier version
 
-If CORRECT:
-- Praise specifically (what exactly did they get right and why it matters)
-- Reinforce the concept
-- Go one level deeper
-- Give a harder follow-up question
+Sia:"""
 
-If PARTIALLY CORRECT:
-- "You're on the right track! Here's what you got right: [specific]"
-- Fix the gap clearly
-- Re-teach the specific part missed
-- Ask them to try again
-
-If WRONG:
-- Never say "wrong" harshly
-- "Good attempt! I can see your thinking — let me show you where it went sideways..."
-- Diagnose WHY (misconception? calculation error? misunderstood concept?)
-- Re-teach using a completely different approach
-- Give a simpler version to rebuild confidence
-- End with a question to confirm they now understand
-"""
-
-
-# ── Generate Questions ────────────────────────────────────────────────────────
 
 def build_generate_questions_prompt(topic: str, number: int, subject: str,
                                     education_level: str, language: str,
@@ -401,47 +398,31 @@ def build_generate_questions_prompt(topic: str, number: int, subject: str,
     context = _build_context(student_name, subject, education_level, language, student_memory)
     return f"""{context}
 
-Task: Create {number} practice questions for {student_name} on "{topic}".
+Create {number} {curriculum}-style practice questions on "{topic}" for {student_name}.
+Mix: easy (recall) → medium (application) → hard (analysis).
+After all questions, add "ANSWERS & EXPLANATIONS:" with brief reasoning for each.
+End with: "Take your time, {student_name}. Tell me your answers when ready!"
 
-Rules:
-- Mix difficulty: easy (recall) → medium (application) → hard (analysis)
-- Use real {curriculum} exam style
-- Number each question
-- After all questions: "ANSWERS & EXPLANATIONS:" — brief explanation for each
-- End with: "Take your time, {student_name}. Tell me your answers when ready and I'll give detailed feedback on each one!"
-"""
+Sia:"""
 
-
-# ── Performance Feedback ──────────────────────────────────────────────────────
 
 def build_performance_feedback_prompt(weak_topics: list, subject: str,
                                       education_level: str, language: str,
                                       student_name: str, score: float = None,
                                       student_memory: dict = None) -> str:
     context = _build_context(student_name, subject, education_level, language, student_memory)
-    score_line = f"Recent Score: {score}%" if score is not None else ""
-    weak_str = ", ".join(weak_topics) if weak_topics else "No specific weak areas yet"
+    score_line = f"Recent score: {score}%" if score is not None else ""
+    weak_str = ", ".join(weak_topics) if weak_topics else "none identified yet"
     return f"""{context}
 
-Task: Give {student_name} honest, motivating, actionable feedback.
-
+Give {student_name} honest, motivating performance feedback.
 {score_line}
-Weak Areas: {weak_str}
+Weak areas: {weak_str}
 
-Structure:
-1. Genuine encouragement — acknowledge effort
-2. Honest assessment — what needs work (don't sugarcoat)
-3. Priority fix: "The most important thing right now is [X] because [reason]"
-4. Specific action plan: "Here's exactly what to do this week..."
-5. Exam impact: "If you fix [X], you could gain [Y] marks"
-6. Challenge: "I want you to try [specific task] and come back to me"
-7. Mastery estimate: "You're currently at about [X]% mastery on this topic"
+Be a coach: acknowledge effort honestly, identify the #1 thing to fix, give a specific action plan, end with a challenge.
 
-Be a coach, not a report card.
-"""
+Sia:"""
 
-
-# ── Wrong Answer ──────────────────────────────────────────────────────────────
 
 def build_wrong_answer_prompt(question: str, wrong_answer: str, correct_answer: str,
                                subject: str, education_level: str, language: str,
@@ -449,39 +430,31 @@ def build_wrong_answer_prompt(question: str, wrong_answer: str, correct_answer: 
     context = _build_context(student_name, subject, education_level, language, student_memory)
     return f"""{context}
 
-Task: Help {student_name} understand why their answer was wrong and truly get the correct one.
-
 Question: {question}
-{student_name}'s Answer: {wrong_answer}
-Correct Answer: {correct_answer}
+{student_name} answered: {wrong_answer}
+Correct answer: {correct_answer}
 
-Structure:
-1. Acknowledge warmly — find something positive in their thinking
-2. Show correct answer clearly
-3. Diagnose the mistake specifically — what went wrong in their thinking
-4. Re-teach using a DIFFERENT analogy
-5. Show why the correct answer is right, step by step
-6. Give a very similar question immediately — let them apply the correction
+Explain warmly why the answer is wrong. Re-teach using a completely different approach or analogy.
+Give a very similar question immediately so they can apply the correction.
 
-Goal: {student_name} finishes thinking "Oh! NOW I get it."
-"""
+Sia:"""
 
 
 # ── Teacher AI ────────────────────────────────────────────────────────────────
 
 TEACHER_SYSTEM_PROMPT = (
-    "You are Sia Teacher Assistant — the AI tool for teachers on Scholaxia. "
-    "You think like an experienced educator. Your output is practical, ready to use, and high quality. "
+    "You are Sia Teacher Assistant — the professional AI tool for teachers on Scholaxia. "
+    "You produce practical, ready-to-use, high-quality educational content. "
     "You do NOT assist students directly. You do NOT provide exam answers to students."
 )
 
 TEACHER_TASK_PROFILES = {
-    "lesson_plan": "Create a detailed lesson plan with objectives, activities, timing, and assessment criteria.",
-    "assignment": "Generate a structured assignment with instructions, marking scheme, and differentiation.",
-    "quiz": "Create exam-quality questions with answers, mark allocations, and explanations.",
-    "grading": "Suggest fair grading criteria with clear mark allocations.",
-    "analytics": "Interpret performance data and suggest specific interventions.",
-    "general": "Assist with any professional teaching task.",
+    "lesson_plan": "Create a detailed, structured lesson plan with clear objectives, teaching activities, timing, and assessment criteria. Make it immediately usable in a Nigerian classroom.",
+    "assignment": "Generate a well-structured assignment with clear instructions, marking scheme, and expected outcomes.",
+    "quiz": "Create exam-quality questions with correct answers, mark allocations, and brief explanations. Mix question types.",
+    "grading": "Suggest fair, consistent grading criteria with clear mark allocations for each level of response.",
+    "analytics": "Interpret the student performance data, identify patterns, and suggest specific, actionable teaching interventions.",
+    "general": "Assist with any professional teaching task with the quality of an experienced educator.",
 }
 
 
@@ -493,7 +466,7 @@ Subject: {subject}
 Student Level: {education_level}
 Task: {instruction}
 
-Teacher Request: {details}
+Teacher's request: {details}
 
 Provide a professional, detailed, immediately usable response.
 """

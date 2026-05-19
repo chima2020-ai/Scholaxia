@@ -45,7 +45,8 @@ async def get_ai_response(question: str, subject: str, education_level: str,
 
     memory = await _get_memory(student_id, subject)
     prompt = build_prompt(question=question, subject=subject, education_level=education_level,
-                          language=language, student_name=student_name, student_memory=memory)
+                          language=language, student_name=student_name, student_memory=memory,
+                          conversation_history=conversation_history)
     try:
         raw = await run_inference(prompt, conversation_history=conversation_history)
     except Exception as e:

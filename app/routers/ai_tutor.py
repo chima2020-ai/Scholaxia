@@ -80,7 +80,8 @@ class AskRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=2000)
     subject: str
     language: str = "english"
-    education_level: Optional[str] = None  # auto-pulled from profile if not provided
+    education_level: Optional[str] = None
+    conversation_history: Optional[list] = None  # last N messages for context
 
 
 @router.post("/ask")
@@ -101,9 +102,9 @@ async def ask_sia(
         language=payload.language,
         student_id=current_user["sub"],
         student_name=student_name,
+        conversation_history=payload.conversation_history,
     )
 
-    # Extract board content from Sia's response
     board = extract_board_content(answer)
 
     return {
