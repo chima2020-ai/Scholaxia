@@ -51,7 +51,7 @@ class Settings(BaseSettings):
 
     # Gemini (Google AI — primary)
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.0-flash"
+    GEMINI_MODEL: str = "gemini-1.5-flash"
 
     # Groq (fallback)
     GROQ_API_KEY: str = ""

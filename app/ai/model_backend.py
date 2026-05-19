@@ -55,6 +55,20 @@ async def _infer_gemini(prompt: str, conversation_history: list = None,
                 },
             },
         )
+        if response.status_code == 404:
+            # Model not found — fall back to gemini-1.5-flash
+            fallback_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+            response = await client.post(
+                fallback_url,
+                params={"key": settings.GEMINI_API_KEY},
+                json={
+                    "contents": contents,
+                    "generationConfig": {
+                        "maxOutputTokens": settings.AI_MAX_TOKENS,
+                        "temperature": settings.AI_TEMPERATURE,
+                    },
+                },
+            )
         response.raise_for_status()
         data = response.json()
         return data["candidates"][0]["content"]["parts"][0]["text"].strip()
