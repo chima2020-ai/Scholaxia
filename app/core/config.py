@@ -58,8 +58,8 @@ class Settings(BaseSettings):
 
     # Google Gemini (better free alternative — higher limits, no token cutoff)
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-1.5-pro"          # smartest free model
-    GEMINI_FLASH_MODEL: str = "gemini-1.5-flash"  # fallback when Pro quota hits
+    GEMINI_MODEL: str = "gemini-2.5-pro"          # smartest — Google's latest
+    GEMINI_FLASH_MODEL: str = "gemini-2.5-flash"  # fast fallback
 
     # ElevenLabs (Sia Voice)
     ELEVENLABS_API_KEY: str = ""
