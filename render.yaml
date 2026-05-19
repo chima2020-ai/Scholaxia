@@ -27,7 +27,7 @@ services:
       - key: GROQ_MODEL
         value: llama-3.3-70b-versatile
       - key: AI_MAX_TOKENS
-        value: "1024"
+        value: "4096"
       - key: AI_TEMPERATURE
         value: "0.4"
 
