@@ -20,9 +20,7 @@ from app.core.config import settings
 
 async def _infer_groq(prompt: str, conversation_history: list = None,
                       image_base64: str = None) -> str:
-    """
-    Calls Groq's API with automatic retry on 429 rate limit.
-    """
+    """Groq fallback — used if Gemini is not configured."""
     import asyncio
 
     messages = []
@@ -46,7 +44,7 @@ async def _infer_groq(prompt: str, conversation_history: list = None,
         model = settings.GROQ_MODEL
         messages.append({"role": "user", "content": prompt})
 
-    for attempt in range(3):  # retry up to 3 times
+    for attempt in range(3):
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
                 "https://api.groq.com/openai/v1/chat/completions",
@@ -63,17 +61,80 @@ async def _infer_groq(prompt: str, conversation_history: list = None,
             )
 
             if response.status_code == 429:
-                # Rate limited — wait and retry
                 retry_after = int(response.headers.get("retry-after", 10))
-                wait = min(retry_after, 30)  # max 30s wait
+                wait = min(retry_after, 30)
                 await asyncio.sleep(wait)
                 continue
 
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"].strip()
 
-    # All retries exhausted
     raise Exception("Groq rate limit exceeded. Please try again in a moment.")
+
+
+async def _infer_gemini(prompt: str, conversation_history: list = None,
+                        image_base64: str = None) -> str:
+    """
+    Google Gemini — primary AI backend.
+    Uses Gemini 1.5 Pro (smartest) with automatic fallback to Flash if quota exceeded.
+    - Pro: 50 req/day free, 2M token context, best quality
+    - Flash: 1,500 req/day free, 1M token context, very fast
+    """
+    contents = []
+
+    if conversation_history:
+        for msg in conversation_history[-8:]:
+            role = "user" if msg.get("role") == "user" else "model"
+            content = msg.get("content", "")
+            if content:
+                contents.append({"role": role, "parts": [{"text": content}]})
+
+    if image_base64:
+        contents.append({
+            "role": "user",
+            "parts": [
+                {"inline_data": {"mime_type": "image/jpeg", "data": image_base64}},
+                {"text": prompt}
+            ]
+        })
+    else:
+        contents.append({"role": "user", "parts": [{"text": prompt}]})
+
+    gen_config = {
+        "maxOutputTokens": settings.AI_MAX_TOKENS,
+        "temperature": settings.AI_TEMPERATURE,
+    }
+
+    safety = [
+        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_ONLY_HIGH"},
+        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_ONLY_HIGH"},
+        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_ONLY_HIGH"},
+        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_ONLY_HIGH"},
+    ]
+
+    # Try Pro first, fall back to Flash if quota exceeded
+    for model in [settings.GEMINI_MODEL, settings.GEMINI_FLASH_MODEL]:
+        async with httpx.AsyncClient(timeout=90.0) as client:
+            response = await client.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                headers={"Content-Type": "application/json"},
+                params={"key": settings.GEMINI_API_KEY},
+                json={"contents": contents, "generationConfig": gen_config, "safetySettings": safety},
+            )
+
+            if response.status_code == 429:
+                # Quota exceeded on this model — try next
+                continue
+
+            response.raise_for_status()
+            data = response.json()
+            return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+
+    # Both models quota exceeded — fall back to Groq
+    if settings.GROQ_API_KEY:
+        return await _infer_groq(prompt, conversation_history, image_base64)
+
+    raise Exception("All AI providers are currently rate limited. Please try again in a moment.")
 
 
 # ── Backend: HOSTED (self-hosted — Ollama / vLLM / TGI) ──────────────────────
@@ -157,6 +218,12 @@ async def _infer_local(prompt: str) -> str:
 async def run_inference(prompt: str, conversation_history: list = None,
                         image_base64: str = None) -> str:
     backend = settings.AI_BACKEND.lower()
+
+    # Auto-select: use Gemini if key is set, fall back to Groq
+    if backend == "gemini" or (backend == "groq" and settings.GEMINI_API_KEY):
+        if settings.GEMINI_API_KEY:
+            return await _infer_gemini(prompt, conversation_history, image_base64)
+
     if backend == "groq":
         return await _infer_groq(prompt, conversation_history, image_base64)
     elif backend == "hosted":

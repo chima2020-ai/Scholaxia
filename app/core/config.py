@@ -56,6 +56,11 @@ class Settings(BaseSettings):
     GROQ_API_KEY: str = ""
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
+    # Google Gemini (better free alternative — higher limits, no token cutoff)
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-1.5-pro"          # smartest free model
+    GEMINI_FLASH_MODEL: str = "gemini-1.5-flash"  # fallback when Pro quota hits
+
     # ElevenLabs (Sia Voice)
     ELEVENLABS_API_KEY: str = ""
     ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"

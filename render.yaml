@@ -19,9 +19,15 @@ services:
       - key: DEBUG
         value: "False"
 
-      # Sia AI — Groq
+      # Sia AI — Gemini (primary) + Groq (fallback)
       - key: AI_BACKEND
-        value: groq
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-1.5-pro
+      - key: GEMINI_FLASH_MODEL
+        value: gemini-1.5-flash
       - key: GROQ_API_KEY
         sync: false
       - key: GROQ_MODEL
