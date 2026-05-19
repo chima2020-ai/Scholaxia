@@ -45,11 +45,9 @@ async def get_ai_response(question: str, subject: str, education_level: str,
 
     memory = await _get_memory(student_id, subject)
     prompt = build_prompt(question=question, subject=subject, education_level=education_level,
-                          language=language, student_name=student_name, student_memory=memory,
-                          conversation_history=conversation_history)
+                          language=language, student_name=student_name, student_memory=memory)
     try:
-        raw = await run_inference(prompt, conversation_history=conversation_history,
-                                  subject=subject)
+        raw = await run_inference(prompt, conversation_history=conversation_history)
     except Exception as e:
         if "429" in str(e) or "rate limit" in str(e).lower():
             return f"I'm getting too many requests right now, {student_name}. Please wait a moment and try again."
@@ -79,7 +77,7 @@ async def sia_solve(question: str, subject: str, education_level: str,
     prompt = build_solve_prompt(question=question, subject=subject, education_level=education_level,
                                 language=language, student_name=student_name, student_memory=memory)
     try:
-        raw = await run_inference(prompt, subject=subject)
+        raw = await run_inference(prompt)
     except Exception as e:
         if "429" in str(e) or "rate limit" in str(e).lower():
             return f"Too many requests right now, {student_name}. Please wait a moment and try again."
@@ -95,7 +93,7 @@ async def sia_evaluate(question: str, student_answer: str, subject: str,
     prompt = build_evaluate_prompt(question=question, student_answer=student_answer, subject=subject,
                                    education_level=education_level, language=language,
                                    student_name=student_name, student_memory=memory)
-    return sanitize_output(await run_inference(prompt, subject=subject))
+    return sanitize_output(await run_inference(prompt))
 
 
 async def sia_generate_questions(topic: str, number: int, subject: str, education_level: str,
