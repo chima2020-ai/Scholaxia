@@ -19,19 +19,17 @@ from app.core.config import settings
 
 async def _infer_gemini(prompt: str, conversation_history: list = None,
                         image_base64: str = None) -> str:
-    """Google Gemini — 1,500 req/day free, 15 req/min, 1M context."""
-    model = settings.GEMINI_MODEL
+    """Google Gemini — uses X-goog-api-key header, gemini-flash-latest model."""
+    model = settings.GEMINI_MODEL  # default: gemini-flash-latest
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
     contents = []
 
-    # Add conversation history
     if conversation_history:
         for msg in conversation_history[-6:]:
             role = "user" if msg.get("role") == "user" else "model"
             contents.append({"role": role, "parts": [{"text": msg.get("content", "")}]})
 
-    # Current message
     if image_base64:
         contents.append({
             "role": "user",
@@ -46,7 +44,10 @@ async def _infer_gemini(prompt: str, conversation_history: list = None,
     async with httpx.AsyncClient(timeout=60.0) as client:
         response = await client.post(
             url,
-            params={"key": settings.GEMINI_API_KEY},
+            headers={
+                "X-goog-api-key": settings.GEMINI_API_KEY,
+                "Content-Type": "application/json",
+            },
             json={
                 "contents": contents,
                 "generationConfig": {
@@ -55,20 +56,6 @@ async def _infer_gemini(prompt: str, conversation_history: list = None,
                 },
             },
         )
-        if response.status_code == 404:
-            # Model not found — fall back to gemini-1.5-flash
-            fallback_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
-            response = await client.post(
-                fallback_url,
-                params={"key": settings.GEMINI_API_KEY},
-                json={
-                    "contents": contents,
-                    "generationConfig": {
-                        "maxOutputTokens": settings.AI_MAX_TOKENS,
-                        "temperature": settings.AI_TEMPERATURE,
-                    },
-                },
-            )
         response.raise_for_status()
         data = response.json()
         return data["candidates"][0]["content"]["parts"][0]["text"].strip()
