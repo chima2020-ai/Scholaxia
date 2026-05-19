@@ -17,7 +17,6 @@ class Settings(BaseSettings):
 
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
-
     APPLE_CLIENT_ID: str = ""
     APPLE_TEAM_ID: str = ""
     APPLE_KEY_ID: str = ""
@@ -41,33 +40,33 @@ class Settings(BaseSettings):
     BREVO_SENDER_NAME: str = "Scholaxia"
     OTP_EXPIRE_MINUTES: int = 10
 
-    # AI Engine — "groq" | "hosted" | "local"
-    AI_BACKEND: str = "groq"
-    AI_LOCAL_MODEL_NAME: str = "mistralai/Mistral-7B-Instruct-v0.3"
-    AI_LOCAL_DEVICE: str = "cpu"
+    # ── AI Engine ─────────────────────────────────────────────────────────────
+    # "gemini" = Google Gemini (primary — 1,500 req/day free)
+    # "groq"   = Groq (fallback)
+    # "hosted" = Self-hosted (Ollama, vLLM)
+    # "local"  = HuggingFace in-process
+    AI_BACKEND: str = "gemini"
+    AI_MAX_TOKENS: int = 2048
+    AI_TEMPERATURE: float = 0.7
+
+    # Gemini (Google AI — primary)
+    # Free: 1,500 req/day, 15 req/min — get key at https://aistudio.google.com
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.0-flash"
+
+    # Groq (fallback)
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+
+    # Hosted inference server
     AI_HOSTED_BASE_URL: str = "http://localhost:11434"
     AI_HOSTED_MODEL_NAME: str = "scholaxia-edu"
     AI_HOSTED_API_KEY: str = ""
     AI_HOSTED_ENDPOINT_TYPE: str = "ollama"
-    AI_MAX_TOKENS: int = 4096
-    AI_TEMPERATURE: float = 0.7
 
-    # Groq (free cloud AI)
-    GROQ_API_KEY: str = ""
-    GROQ_MODEL: str = "llama-3.3-70b-versatile"
-
-    # Google Gemini (better free alternative — higher limits, no token cutoff)
-    GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-2.5-pro"          # smartest — Google's latest
-    GEMINI_FLASH_MODEL: str = "gemini-2.5-flash"  # fast fallback
-
-    # OpenAI (GPT-4o — research & general knowledge)
-    OPENAI_API_KEY: str = ""
-    OPENAI_MODEL: str = "gpt-4o"
-
-    # DeepSeek (deepseek-reasoner — math calculations & logical reasoning)
-    DEEPSEEK_API_KEY: str = ""
-    DEEPSEEK_MODEL: str = "deepseek-reasoner"
+    # Local HuggingFace
+    AI_LOCAL_MODEL_NAME: str = "mistralai/Mistral-7B-Instruct-v0.3"
+    AI_LOCAL_DEVICE: str = "cpu"
 
     # ElevenLabs (Sia Voice)
     ELEVENLABS_API_KEY: str = ""
