@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     # "hosted" = Self-hosted (Ollama, vLLM)
     # "local"  = HuggingFace in-process
     AI_BACKEND: str = "gemini"
-    AI_MAX_TOKENS: int = 2048
+    AI_MAX_TOKENS: int = 8192   # Gemini supports up to 8192 output tokens
     AI_TEMPERATURE: float = 0.7
 
     # Gemini (Google AI — primary)

@@ -252,17 +252,39 @@ async def run_inference(prompt: str, conversation_history: list = None,
                         image_base64: str = None) -> str:
     backend = settings.AI_BACKEND.lower()
 
-    if backend == "gemini":
-        return await _infer_gemini(prompt, conversation_history, image_base64)
-    elif backend == "openai":
-        return await _infer_openai(prompt, conversation_history, image_base64)
-    elif backend == "deepseek":
-        return await _infer_deepseek(prompt, conversation_history)
-    elif backend == "groq":
-        return await _infer_groq(prompt, conversation_history, image_base64)
-    elif backend == "hosted":
-        return await _infer_hosted(prompt)
-    elif backend == "local":
-        return await _infer_local(prompt)
-    else:
-        raise ValueError(f"Unknown AI_BACKEND: '{backend}'")
+    # Primary backend
+    try:
+        if backend == "gemini":
+            return await _infer_gemini(prompt, conversation_history, image_base64)
+        elif backend == "openai":
+            return await _infer_openai(prompt, conversation_history, image_base64)
+        elif backend == "deepseek":
+            return await _infer_deepseek(prompt, conversation_history)
+        elif backend == "groq":
+            return await _infer_groq(prompt, conversation_history, image_base64)
+        elif backend == "hosted":
+            return await _infer_hosted(prompt)
+        elif backend == "local":
+            return await _infer_local(prompt)
+        else:
+            raise ValueError(f"Unknown AI_BACKEND: '{backend}'")
+
+    except Exception as primary_error:
+        # Auto-fallback chain: try other available backends
+        fallbacks = []
+        if backend != "gemini" and settings.GEMINI_API_KEY:
+            fallbacks.append(("gemini", lambda: _infer_gemini(prompt, conversation_history, image_base64)))
+        if backend != "openai" and settings.OPENAI_API_KEY:
+            fallbacks.append(("openai", lambda: _infer_openai(prompt, conversation_history, image_base64)))
+        if backend != "deepseek" and settings.DEEPSEEK_API_KEY:
+            fallbacks.append(("deepseek", lambda: _infer_deepseek(prompt, conversation_history)))
+
+        for name, fn in fallbacks:
+            try:
+                result = await fn()
+                return result
+            except Exception:
+                continue
+
+        # All backends failed — raise original error
+        raise primary_error
