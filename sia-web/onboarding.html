@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome — Scholaxia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="onboarding.css" />
+</head>
+<body>
+
+<div class="onboarding-container">
+  <!-- Skip button -->
+  <button class="skip-btn" onclick="skipOnboarding()">Skip</button>
+
+  <!-- Slides container -->
+  <div class="slides-wrapper">
+    
+    <!-- Slide 1: Welcome -->
+    <div class="slide active" data-slide="0">
+      <div class="slide-content">
+        <div class="slide-icon">🎓</div>
+        <h1>Welcome to Scholaxia</h1>
+        <p>Your personal AI study companion that adapts to how you learn.</p>
+      </div>
+    </div>
+
+    <!-- Slide 2: Meet Sia -->
+    <div class="slide" data-slide="1">
+      <div class="slide-content">
+        <div class="slide-icon">🤖</div>
+        <h1>Meet Sia</h1>
+        <p>Sia explains concepts, solves problems, and generates practice questions tailored to your level.</p>
+      </div>
+    </div>
+
+    <!-- Slide 3: Personalized Learning -->
+    <div class="slide" data-slide="2">
+      <div class="slide-content">
+        <div class="slide-icon">🎯</div>
+        <h1>Personalized Learning</h1>
+        <p>Track your weak areas and get custom recommendations to improve faster.</p>
+      </div>
+    </div>
+
+    <!-- Slide 4: Live Classes -->
+    <div class="slide" data-slide="3">
+      <div class="slide-content">
+        <div class="slide-icon">📚</div>
+        <h1>Live Classes</h1>
+        <p>Join interactive sessions with expert teachers and learn in real-time.</p>
+      </div>
+    </div>
+
+    <!-- Slide 5: Get Started -->
+    <div class="slide" data-slide="4">
+      <div class="slide-content">
+        <div class="slide-icon">🚀</div>
+        <h1>Ready to Learn?</h1>
+        <p>Create your free account and start your personalized learning journey today.</p>
+        <button class="cta-btn" onclick="getStarted()">Get Started</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Navigation dots -->
+  <div class="dots-container">
+    <div class="dot active" data-slide="0"></div>
+    <div class="dot" data-slide="1"></div>
+    <div class="dot" data-slide="2"></div>
+    <div class="dot" data-slide="3"></div>
+    <div class="dot" data-slide="4"></div>
+  </div>
+
+  <!-- Navigation arrows -->
+  <button class="nav-arrow prev" onclick="prevSlide()" aria-label="Previous">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M15 18l-6-6 6-6"/>
+    </svg>
+  </button>
+  <button class="nav-arrow next" onclick="nextSlide()" aria-label="Next">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M9 18l6-6-6-6"/>
+    </svg>
+  </button>
+
+</div>
+
+<script>
+let currentSlide = 0;
+const totalSlides = 5;
+
+function showSlide(index) {
+  // Update slides
+  document.querySelectorAll('.slide').forEach((slide, i) => {
+    slide.classList.remove('active');
+    if (i === index) {
+      slide.classList.add('active');
+    }
+  });
+
+  // Update dots
+  document.querySelectorAll('.dot').forEach((dot, i) => {
+    dot.classList.remove('active');
+    if (i === index) {
+      dot.classList.add('active');
+    }
+  });
+
+  // Update arrow visibility
+  document.querySelector('.prev').style.opacity = index === 0 ? '0.3' : '1';
+  document.querySelector('.prev').style.pointerEvents = index === 0 ? 'none' : 'auto';
+  document.querySelector('.next').style.display = index === totalSlides - 1 ? 'none' : 'flex';
+
+  currentSlide = index;
+}
+
+function nextSlide() {
+  if (currentSlide < totalSlides - 1) {
+    showSlide(currentSlide + 1);
+  }
+}
+
+function prevSlide() {
+  if (currentSlide > 0) {
+    showSlide(currentSlide - 1);
+  }
+}
+
+function skipOnboarding() {
+  localStorage.setItem('scholaxia_onboarding_complete', 'true');
+  window.location.href = 'auth.html';
+}
+
+function getStarted() {
+  localStorage.setItem('scholaxia_onboarding_complete', 'true');
+  window.location.href = 'auth.html?mode=signup';
+}
+
+// Click on dots to navigate
+document.querySelectorAll('.dot').forEach(dot => {
+  dot.addEventListener('click', () => {
+    const slideIndex = parseInt(dot.dataset.slide);
+    showSlide(slideIndex);
+  });
+});
+
+// Keyboard navigation
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight') nextSlide();
+  if (e.key === 'ArrowLeft') prevSlide();
+  if (e.key === 'Escape') skipOnboarding();
+});
+
+// Touch swipe support
+let touchStartX = 0;
+let touchEndX = 0;
+
+document.addEventListener('touchstart', e => {
+  touchStartX = e.changedTouches[0].screenX;
+});
+
+document.addEventListener('touchend', e => {
+  touchEndX = e.changedTouches[0].screenX;
+  handleSwipe();
+});
+
+function handleSwipe() {
+  const swipeThreshold = 50;
+  const diff = touchStartX - touchEndX;
+  
+  if (Math.abs(diff) > swipeThreshold) {
+    if (diff > 0) {
+      nextSlide();
+    } else {
+      prevSlide();
+    }
+  }
+}
+</script>
+
+</body>
+</html>

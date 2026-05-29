@@ -1,0 +1,156 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0a0a0f;
+  --accent: #10a37f;
+  --accent2: #7c3aed;
+  --text: #f0f0f5;
+  --text2: #9090a8;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+#splash-screen {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.splash-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.splash-logo {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.splash-icon {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  font-weight: 800;
+  color: white;
+  z-index: 1;
+  animation: splashPop 0.8s ease 0.3s both;
+  box-shadow: 0 20px 40px rgba(16, 163, 127, 0.3);
+}
+
+@keyframes splashPop {
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.splash-ring {
+  position: absolute;
+  inset: -12px;
+  border-radius: 28px;
+  border: 2px solid rgba(16, 163, 127, 0.3);
+  animation: ringExpand 2s ease infinite;
+}
+
+.splash-ring.ring2 {
+  inset: -24px;
+  border-radius: 32px;
+  animation-delay: 0.6s;
+  border-color: rgba(124, 58, 237, 0.3);
+}
+
+@keyframes ringExpand {
+  0% {
+    opacity: 1;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+}
+
+.splash-name {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--text);
+  animation: fadeIn 0.6s ease 0.8s both;
+  letter-spacing: -0.5px;
+}
+
+.splash-tagline {
+  font-size: 14px;
+  color: var(--text2);
+  animation: fadeIn 0.6s ease 1s both;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.splash-loader {
+  width: 200px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  animation: fadeIn 0.6s ease 1.2s both;
+}
+
+.loader-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 2px;
+  animation: loading 2s ease-in-out 1.2s both;
+}
+
+@keyframes loading {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sia — Scholaxia AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="splash.css" />
+</head>
+<body>
+
+<div id="splash-screen">
+  <div class="splash-container">
+    <div class="splash-logo">
+      <div class="splash-icon">S</div>
+      <div class="splash-ring"></div>
+      <div class="splash-ring ring2"></div>
+    </div>
+    <div class="splash-name">Scholaxia</div>
+    <div class="splash-tagline">Intelligent Education</div>
+    <div class="splash-loader">
+      <div class="loader-bar"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Splash screen animation and redirect
+window.addEventListener('load', () => {
+  const splash = document.getElementById('splash-screen');
+  
+  // Check if user has seen onboarding
+  const hasSeenOnboarding = localStorage.getItem('scholaxia_onboarding_complete');
+  
+  // Show splash for 2.5 seconds then redirect
+  setTimeout(() => {
+    splash.style.opacity = '0';
+    splash.style.transition = 'opacity 0.5s ease';
+    
+    setTimeout(() => {
+      if (hasSeenOnboarding) {
+        window.location.href = 'auth.html';
+      } else {
+        window.location.href = 'onboarding.html';
+      }
+    }, 500);
+  }, 2500);
+});
+</script>
+
+</body>
+</html>
