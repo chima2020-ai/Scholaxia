@@ -8,6 +8,6 @@ from app.models.content import Book, SavedBook, BookReadProgress, Video, Note, S
 from app.models.notification import Notification
 from app.models.sia_note import SiaNote
 from app.models.api_key import ApiKey, ApiUsageLog, ApiDailyUsage
-from app.models.review_report import ReviewReport
+from app.models.review_report import Report, TeacherReview
 from app.models.wallet import TeacherWallet, WalletTransaction, WithdrawalRequest
 from app.models.student_analytics import StudentLearningProfile, LessonSession
