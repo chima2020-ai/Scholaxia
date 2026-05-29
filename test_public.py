@@ -1,6 +1,6 @@
 import urllib.request, json
 
-BASE = "https://scholaxia.onrender.com"
+BASE = "https://scholaxia1.onrender.com"
 
 def get(path, expect_json=True):
     req = urllib.request.Request(BASE + path)

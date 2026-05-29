@@ -4,7 +4,7 @@ Tests every endpoint in the correct order.
 """
 import urllib.request, urllib.error, json, time, random, string
 
-BASE = "https://scholaxia.onrender.com"
+BASE = "https://scholaxia1.onrender.com"
 PASS = 0
 FAIL = 0
 SKIP = 0

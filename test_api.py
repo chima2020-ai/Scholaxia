@@ -1,6 +1,6 @@
 import urllib.request, json
 
-BASE = "https://scholaxia.onrender.com"
+BASE = "https://scholaxia1.onrender.com"
 
 def post(path, data, token=None):
     body = json.dumps(data).encode()

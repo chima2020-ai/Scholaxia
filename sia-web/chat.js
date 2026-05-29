@@ -165,7 +165,11 @@ async function sendMessage() {
 
   } catch (e) {
     removeTyping(typingId);
-    appendMessage("sia", "Sorry, something went wrong. Please try again.");
+    if (e.name === "AbortError" || e.message?.includes("timeout")) {
+      appendMessage("sia", "Sia is thinking... the server is warming up. Please send your message again in a moment.");
+    } else {
+      appendMessage("sia", "Something went wrong. Please try again.");
+    }
   } finally {
     document.getElementById("send-btn").disabled = false;
   }

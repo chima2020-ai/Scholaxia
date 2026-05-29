@@ -1,4 +1,4 @@
-const API = "https://scholaxia.onrender.com";
+const API = "https://scholaxia1.onrender.com";
 const token = localStorage.getItem("sia_token") || "";
 const userName = localStorage.getItem("sia_name") || "";
 

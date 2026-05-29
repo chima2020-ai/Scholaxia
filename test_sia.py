@@ -4,7 +4,7 @@ Tests every Sia mode with real educational questions.
 """
 import urllib.request, urllib.error, json, random, string
 
-BASE = "https://scholaxia.onrender.com"
+BASE = "https://scholaxia1.onrender.com"
 
 def post(path, data, token=None):
     body = json.dumps(data).encode()

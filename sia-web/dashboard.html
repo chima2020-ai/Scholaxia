@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Developer Dashboard — Scholaxia</title>
+  <title>Developer Dashboard — Sia by Scholaxia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="dashboard.css" />
 </head>
 <body>
@@ -12,7 +14,7 @@
   <!-- Sidebar -->
   <aside class="dash-sidebar">
     <div class="dash-brand">
-      <div class="logo-mark">S</div>
+      <div class="brand-mark">S</div>
       <span>Scholaxia</span>
     </div>
     <nav class="dash-nav">
@@ -113,7 +115,7 @@
           <p>Integrate Sia — the Scholaxia Intelligent Assistant — into your application.</p>
           <div class="base-url">
             <span>Base URL</span>
-            <code>https://scholaxia.onrender.com/api/v1</code>
+            <code>https://scholaxia1.onrender.com/api/v1</code>
           </div>
         </div>
 
@@ -129,7 +131,7 @@ Authorization: Bearer sxa_live_your_key_here</pre>
           <h3>POST /ai/ask</h3>
           <p>Ask Sia an educational question. Returns a detailed explanation.</p>
           <div class="endpoint-badge">POST</div>
-          <pre class="code-block">curl -X POST https://scholaxia.onrender.com/api/v1/ai/ask \
+          <pre class="code-block">curl -X POST https://scholaxia1.onrender.com/api/v1/ai/ask \
   -H "x-api-key: YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -160,7 +162,7 @@ Authorization: Bearer sxa_live_your_key_here</pre>
         <div class="docs-section">
           <h3>GET /ai/usage</h3>
           <p>Check your current usage and remaining quota for today.</p>
-          <pre class="code-block">curl https://scholaxia.onrender.com/api/v1/ai/usage \
+          <pre class="code-block">curl https://scholaxia1.onrender.com/api/v1/ai/usage \
   -H "x-api-key: YOUR_KEY"</pre>
           <pre class="code-block">{
   "requests_today": 45,
@@ -173,7 +175,7 @@ Authorization: Bearer sxa_live_your_key_here</pre>
         <div class="docs-section">
           <h3>GET /ai/models</h3>
           <p>List available Sia AI models.</p>
-          <pre class="code-block">curl https://scholaxia.onrender.com/api/v1/ai/models \
+          <pre class="code-block">curl https://scholaxia1.onrender.com/api/v1/ai/models \
   -H "x-api-key: YOUR_KEY"</pre>
         </div>
 
