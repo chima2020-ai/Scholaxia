@@ -160,7 +160,7 @@ async function sendMessage() {
     }
 
     removeTyping(typingId);
-    appendMessage("sia", answer);
+    await typeMessage("sia", answer);
     saveToChat("sia", answer);
 
   } catch (e) {
@@ -176,6 +176,7 @@ async function sendMessage() {
 }
 
 function buildRequestBody(mode, text, subject, language) {
+  // Do NOT send education_level — let Sia ask the student for their class
   const base = { subject, language };
   switch (mode) {
     case "ask": return { ...base, question: text };
@@ -211,6 +212,36 @@ function appendMessage(role, content, imageUrl = null, scroll = true) {
   `;
   el.appendChild(div);
   if (scroll) el.scrollTop = el.scrollHeight;
+}
+
+// ── Typewriter effect ──────────────────────────────────
+async function typeMessage(role, content, imageUrl = null) {
+  const el = document.getElementById("messages");
+  const div = document.createElement("div");
+  div.className = `message ${role}`;
+
+  const imgHtml = imageUrl ? `<img src="${imageUrl}" class="msg-image" alt="Sent image" />` : "";
+  const contentDiv = document.createElement("div");
+  contentDiv.className = "msg-content";
+  if (imgHtml) contentDiv.innerHTML = imgHtml;
+
+  div.innerHTML = `<div class="msg-avatar">S</div>`;
+  div.appendChild(contentDiv);
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+
+  // Type character by character at ~18ms per char (fast but visible)
+  let displayed = "";
+  const speed = 12; // ms per character — lower = faster
+  for (let i = 0; i < content.length; i++) {
+    displayed += content[i];
+    contentDiv.innerHTML = imgHtml + formatContent(displayed) + '<span class="cursor">▋</span>';
+    el.scrollTop = el.scrollHeight;
+    await new Promise(r => setTimeout(r, speed));
+  }
+  // Remove cursor, render final clean content
+  contentDiv.innerHTML = imgHtml + formatContent(content);
+  el.scrollTop = el.scrollHeight;
 }
 
 function showTyping() {
