@@ -1,4 +1,4 @@
-const API = "https://scholaxia.onrender.com";
+const API = "https://scholaxia1.onrender.com";
 
 let token = localStorage.getItem("sia_token") || "";
 let userName = localStorage.getItem("sia_name") || "";
@@ -260,4 +260,10 @@ function updateMode() {
   };
   document.getElementById("chat-input").placeholder =
     placeholders[document.getElementById("sia-mode").value] || "Message Sia...";
+}
+
+// ── Mobile sidebar toggle ──────────────────────────────
+function toggleSidebar() {
+  document.getElementById("sidebar").classList.toggle("open");
+  document.getElementById("sidebar-overlay").classList.toggle("open");
 }
