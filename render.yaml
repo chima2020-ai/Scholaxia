@@ -99,3 +99,10 @@ databases:
   - name: scholaxia-redis
     type: redis
     plan: free
+
+  # ── Static site — Sia Web Frontend ──────────────────────────────────────────
+  # Deployed separately as a Render Static Site
+  # Service name: scholaxia-web
+  # Root directory: scholaxia/sia-web
+  # Publish directory: . (the sia-web folder itself)
+  # No build command needed — pure HTML/CSS/JS
