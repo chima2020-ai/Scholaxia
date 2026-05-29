@@ -6,7 +6,18 @@
   <title>Sia — Scholaxia AI Tutor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="chat.css" />
+  <link rel="stylesheet" href="chat.css?v=1.0" />
+  <style>
+    /* Fallback basic styling in case CSS fails to load */
+    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    #app { display: flex; height: 100vh; }
+    .sidebar { width: 260px; background: #141414; border-right: 1px solid #2a2a2a; padding: 20px; }
+    .main-content { flex: 1; display: flex; flex-direction: column; }
+    .chat-area { flex: 1; display: flex; flex-direction: column; padding: 20px; }
+    .input-area { padding: 20px; border-top: 1px solid #2a2a2a; }
+    #chat-input { width: 100%; padding: 10px; background: #1a1a1a; border: 1px solid #333; color: white; border-radius: 8px; }
+    .send-btn { background: #f5c518; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; }
+  </style>
 </head>
 <body>
 
@@ -23,57 +34,6 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         New Session
       </button>
-    </div>
-
-    <!-- Mode & Subject -->
-    <div class="sidebar-controls">
-      <div class="control-group">
-        <label class="control-label">MODE</label>
-        <select id="sia-mode" class="control-select" onchange="updateMode()">
-          <option value="ask">💬 Ask Anything</option>
-          <option value="explain">📖 Explain Concept</option>
-          <option value="solve">🔢 Solve Problem</option>
-          <option value="evaluate">✅ Check My Answer</option>
-          <option value="generate-questions">📝 Practice Questions</option>
-          <option value="feedback">📊 My Performance</option>
-        </select>
-      </div>
-      <div class="control-group">
-        <label class="control-label">SUBJECT</label>
-        <select id="subject-input" class="control-select">
-          <option value="General">General</option>
-          <option value="Mathematics">Mathematics</option>
-          <option value="English">English Language</option>
-          <option value="Physics">Physics</option>
-          <option value="Chemistry">Chemistry</option>
-          <option value="Biology">Biology</option>
-          <option value="Geography">Geography</option>
-          <option value="History">History</option>
-          <option value="Economics">Economics</option>
-          <option value="Government">Government</option>
-          <option value="Literature">Literature</option>
-          <option value="Agricultural Science">Agric Science</option>
-          <option value="Further Mathematics">Further Maths</option>
-          <option value="Computer Science">Computer Science</option>
-          <option value="Civic Education">Civic Education</option>
-          <option value="French">French</option>
-          <option value="Yoruba">Yoruba</option>
-          <option value="Igbo">Igbo</option>
-          <option value="Hausa">Hausa</option>
-        </select>
-      </div>
-      <div class="control-group">
-        <label class="control-label">LANGUAGE</label>
-        <select id="sia-language" class="control-select">
-          <option value="english">English</option>
-          <option value="yoruba">Yoruba</option>
-          <option value="igbo">Igbo</option>
-          <option value="hausa">Hausa</option>
-          <option value="pidgin">Pidgin</option>
-          <option value="french">French</option>
-          <option value="arabic">Arabic</option>
-        </select>
-      </div>
     </div>
 
     <!-- History -->

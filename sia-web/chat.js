@@ -92,9 +92,9 @@ async function sendMessage() {
   const hasImage = !!selectedImage;
   if (!text && !hasImage) return;
 
-  const subject = document.getElementById("subject-input").value || "General";
-  const mode = document.getElementById("sia-mode").value;
-  const language = document.getElementById("sia-language").value;
+  const subject = "General";
+  const mode = "ask";
+  const language = "english";
 
   input.value = "";
   input.style.height = "auto";
@@ -190,7 +190,6 @@ function buildRequestBody(mode, text, subject, language) {
 }
 
 function sendSuggestion(question, subject) {
-  document.getElementById("subject-input").value = subject;
   document.getElementById("chat-input").value = question;
   sendMessage();
 }
@@ -282,19 +281,6 @@ function handleKey(e) {
 function autoResize(el) {
   el.style.height = "auto";
   el.style.height = Math.min(el.scrollHeight, 200) + "px";
-}
-
-function updateMode() {
-  const placeholders = {
-    ask: "Ask Sia anything...",
-    explain: "Enter a topic to explain",
-    solve: "Enter a problem to solve",
-    evaluate: "Enter your answer for Sia to evaluate",
-    "generate-questions": "Enter a topic for practice questions",
-    feedback: "Press send to get your performance feedback",
-  };
-  document.getElementById("chat-input").placeholder =
-    placeholders[document.getElementById("sia-mode").value] || "Message Sia...";
 }
 
 // ── Mobile sidebar toggle ──────────────────────────────
