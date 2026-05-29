@@ -48,7 +48,11 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 .blackboard {
   flex: 1; overflow-y: auto; padding: 32px;
   display: flex; flex-direction: column; gap: 0;
-  background: var(--bg);
+  background: #1a1a1a;
+  border: 8px solid #3d2817;
+  border-radius: 4px;
+  box-shadow: inset 0 0 60px rgba(0,0,0,0.8), 0 4px 20px rgba(0,0,0,0.5);
+  margin: 16px;
 }
 .blackboard::-webkit-scrollbar { width: 4px; }
 .blackboard::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
