@@ -8,6 +8,9 @@ from app.ai.prompt_builder import (
     build_prompt, build_explain_prompt, build_solve_prompt,
     build_evaluate_prompt, build_generate_questions_prompt,
     build_performance_feedback_prompt, build_wrong_answer_prompt,
+    build_lesson_prompt, build_anti_cheat_prompt, build_debate_prompt,
+    build_study_companion_prompt, build_pdf_prompt, build_language_immersion_prompt,
+    build_study_plan_prompt, build_cambridge_prompt, build_parent_report_prompt,
 )
 from app.ai.model_backend import run_inference
 from app.ai.safety_filter import is_educational, sanitize_output
@@ -126,4 +129,106 @@ async def sia_explain_wrong_answer(question: str, wrong_answer: str, correct_ans
                                        correct_answer=correct_answer, subject=subject,
                                        education_level=education_level, language=language,
                                        student_name=student_name, student_memory=memory)
+    return sanitize_output(await run_inference(prompt))
+
+
+async def sia_lesson(topic: str, subject: str, education_level: str, language: str,
+                     student_id: str, student_name: str, curriculum: str,
+                     step: int = 1, previous_response: str = "") -> str:
+    memory = await _get_memory(student_id, subject)
+    prompt = build_lesson_prompt(
+        topic=topic, subject=subject, education_level=education_level,
+        language=language, student_name=student_name, curriculum=curriculum,
+        step=step, previous_response=previous_response, student_memory=memory,
+    )
+    return sanitize_output(await run_inference(prompt))
+
+
+async def sia_anti_cheat(question: str, submitted_answer: str,
+                          subject: str, student_name: str) -> str:
+    prompt = build_anti_cheat_prompt(
+        question=question, submitted_answer=submitted_answer,
+        subject=subject, student_name=student_name,
+    )
+    return sanitize_output(await run_inference(prompt))
+
+
+async def sia_debate(topic: str, student_position: str,
+                     subject: str, student_name: str) -> str:
+    prompt = build_debate_prompt(
+        topic=topic, student_position=student_position,
+        subject=subject, student_name=student_name,
+    )
+    return sanitize_output(await run_inference(prompt))
+
+
+async def sia_study_companion(student_name: str, last_subject: str,
+                               last_topic: str, days_inactive: int) -> str:
+    prompt = build_study_companion_prompt(
+        student_name=student_name, last_subject=last_subject,
+        last_topic=last_topic, days_inactive=days_inactive,
+    )
+    return sanitize_output(await run_inference(prompt))
+
+
+async def sia_process_pdf(pdf_content: str, output_type: str, subject: str,
+                           education_level: str, curriculum: str, exam_standard: str,
+                           student_name: str, language: str = "english") -> str:
+    prompt = build_pdf_prompt(
+        pdf_content=pdf_content, output_type=output_type, subject=subject,
+        education_level=education_level, curriculum=curriculum,
+        exam_standard=exam_standard, student_name=student_name, language=language,
+    )
+    return sanitize_output(await run_inference(prompt))
+
+
+async def sia_language_immersion(target_language: str, student_message: str,
+                                  student_name: str, student_level: str = "beginner",
+                                  approach: str = "bilingual") -> str:
+    prompt = build_language_immersion_prompt(
+        target_language=target_language, student_message=student_message,
+        student_name=student_name, student_level=student_level, approach=approach,
+    )
+    return sanitize_output(await run_inference(prompt))
+
+
+async def sia_generate_study_plan(student_name: str, level: str, exam_target: str,
+                                   student_id: str, hours_per_day: float,
+                                   days_until_exam: int) -> str:
+    weak = await get_weak_topics(student_id)
+    memory = await _get_memory(student_id, "")
+    strong = {s: [] for s in memory.get("strong_topics", [])}
+    prompt = build_study_plan_prompt(
+        student_name=student_name, level=level, exam_target=exam_target,
+        weak_subjects=weak if isinstance(weak, dict) else {},
+        strong_subjects=strong, learning_speed=memory.get("learning_style", "medium"),
+        hours_per_day=hours_per_day, days_until_exam=days_until_exam,
+    )
+    return sanitize_output(await run_inference(prompt))
+
+
+async def sia_cambridge_teach(topic: str, subject: str, education_level: str,
+                               student_id: str, student_name: str) -> str:
+    prompt = build_cambridge_prompt(
+        topic=topic, subject=subject,
+        education_level=education_level, student_name=student_name,
+    )
+    return sanitize_output(await run_inference(prompt))
+
+
+async def sia_parent_report(student_name: str, level: str, profile_data: dict) -> str:
+    prompt = build_parent_report_prompt(
+        student_name=student_name,
+        level=level,
+        total_sessions=profile_data.get("total_ai_sessions", 0),
+        total_minutes=profile_data.get("total_study_minutes", 0),
+        streak_days=profile_data.get("streak_days", 0),
+        weak_subjects=profile_data.get("weak_subjects", {}),
+        strong_subjects=profile_data.get("strong_subjects", {}),
+        avg_score=profile_data.get("avg_score", 0.0),
+        learning_speed=profile_data.get("learning_speed", "medium"),
+        confidence_level=profile_data.get("confidence_level", "building"),
+        attention_pattern=profile_data.get("attention_pattern", "normal"),
+        last_active=profile_data.get("last_active", "Unknown"),
+    )
     return sanitize_output(await run_inference(prompt))

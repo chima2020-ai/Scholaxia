@@ -13,6 +13,7 @@ Supports multiple backends via AI_BACKEND env var:
 import asyncio
 import httpx
 from app.core.config import settings
+from app.ai.prompt_builder import SIA_SYSTEM_PROMPT
 
 
 # ── Gemini ────────────────────────────────────────────────────────────────────
@@ -24,6 +25,9 @@ async def _infer_gemini(prompt: str, conversation_history: list = None,
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
     contents = []
+
+    # Gemini uses systemInstruction for the system prompt
+    system_instruction = {"parts": [{"text": SIA_SYSTEM_PROMPT}]}
 
     if conversation_history:
         for msg in conversation_history[-6:]:
@@ -50,6 +54,7 @@ async def _infer_gemini(prompt: str, conversation_history: list = None,
             },
             json={
                 "contents": contents,
+                "systemInstruction": system_instruction,
                 "generationConfig": {
                     "maxOutputTokens": settings.AI_MAX_TOKENS,
                     "temperature": settings.AI_TEMPERATURE,
@@ -66,7 +71,7 @@ async def _infer_gemini(prompt: str, conversation_history: list = None,
 async def _infer_openai(prompt: str, conversation_history: list = None,
                         image_base64: str = None) -> str:
     """OpenAI GPT-4o — highest quality, paid."""
-    messages = []
+    messages = [{"role": "system", "content": SIA_SYSTEM_PROMPT}]
 
     if conversation_history:
         for msg in conversation_history[-6:]:
@@ -108,7 +113,7 @@ async def _infer_openai(prompt: str, conversation_history: list = None,
 
 async def _infer_deepseek(prompt: str, conversation_history: list = None) -> str:
     """DeepSeek — very smart, cheap."""
-    messages = []
+    messages = [{"role": "system", "content": SIA_SYSTEM_PROMPT}]
 
     if conversation_history:
         for msg in conversation_history[-6:]:
@@ -142,7 +147,7 @@ async def _infer_deepseek(prompt: str, conversation_history: list = None) -> str
 async def _infer_groq(prompt: str, conversation_history: list = None,
                       image_base64: str = None) -> str:
     """Groq — fast free tier, 30 req/min limit."""
-    messages = []
+    messages = [{"role": "system", "content": SIA_SYSTEM_PROMPT}]
 
     if conversation_history:
         for msg in conversation_history[-6:]:
@@ -250,9 +255,18 @@ async def _infer_local(prompt: str) -> str:
 
 async def run_inference(prompt: str, conversation_history: list = None,
                         image_base64: str = None) -> str:
+    """
+    Run inference with automatic fallback chain.
+
+    Priority order (primary → fallbacks):
+      gemini → openai → deepseek → groq
+
+    Any backend can be set as primary via AI_BACKEND env var.
+    All others with valid API keys are tried automatically on failure.
+    """
     backend = settings.AI_BACKEND.lower()
 
-    # Primary backend
+    # ── Primary backend ───────────────────────────────────────────────────────
     try:
         if backend == "gemini":
             return await _infer_gemini(prompt, conversation_history, image_base64)
@@ -270,21 +284,22 @@ async def run_inference(prompt: str, conversation_history: list = None,
             raise ValueError(f"Unknown AI_BACKEND: '{backend}'")
 
     except Exception as primary_error:
-        # Auto-fallback chain: try other available backends
-        fallbacks = []
-        if backend != "gemini" and settings.GEMINI_API_KEY:
-            fallbacks.append(("gemini", lambda: _infer_gemini(prompt, conversation_history, image_base64)))
-        if backend != "openai" and settings.OPENAI_API_KEY:
-            fallbacks.append(("openai", lambda: _infer_openai(prompt, conversation_history, image_base64)))
-        if backend != "deepseek" and settings.DEEPSEEK_API_KEY:
-            fallbacks.append(("deepseek", lambda: _infer_deepseek(prompt, conversation_history)))
+        # ── Fallback chain — priority order: gemini → openai → deepseek → groq ─
+        # Each backend is only tried if it has an API key and isn't the primary
+        fallback_chain = [
+            ("gemini",   settings.GEMINI_API_KEY,   lambda: _infer_gemini(prompt, conversation_history, image_base64)),
+            ("openai",   settings.OPENAI_API_KEY,   lambda: _infer_openai(prompt, conversation_history, image_base64)),
+            ("deepseek", settings.DEEPSEEK_API_KEY, lambda: _infer_deepseek(prompt, conversation_history)),
+            ("groq",     settings.GROQ_API_KEY,     lambda: _infer_groq(prompt, conversation_history, image_base64)),
+        ]
 
-        for name, fn in fallbacks:
+        for name, api_key, fn in fallback_chain:
+            if name == backend or not api_key:
+                continue  # skip primary and unconfigured backends
             try:
-                result = await fn()
-                return result
+                return await fn()
             except Exception:
-                continue
+                continue  # try next fallback
 
         # All backends failed — raise original error
         raise primary_error
