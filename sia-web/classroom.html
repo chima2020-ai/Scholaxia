@@ -6,7 +6,21 @@
   <title>Sia Classroom — Scholaxia</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="classroom.css" />
+  <link rel="stylesheet" href="classroom.css?v=1.0" />
+  <style>
+    /* Fallback basic styling in case CSS fails to load */
+    body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d0d0d; color: #f0f0f0; }
+    #classroom { display: flex; flex-direction: column; height: 100vh; }
+    .top-bar { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: #141414; border-bottom: 1px solid #2a2a2a; }
+    .back-btn { color: #f5c518; text-decoration: none; display: flex; align-items: center; gap: 8px; }
+    .blackboard { flex: 1; background: #1a1a1a; padding: 20px; position: relative; }
+    .board-welcome { text-align: center; padding: 40px; }
+    .welcome-text { font-size: 24px; font-weight: 700; color: #f5c518; margin-bottom: 10px; }
+    .bottom-controls { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 20px; background: #141414; border-top: 1px solid #2a2a2a; }
+    .mic-btn { width: 80px; height: 80px; border-radius: 50%; background: #f5c518; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+    .subject-select { padding: 10px 16px; background: #1a1a1a; border: 1px solid #333; color: white; border-radius: 8px; }
+    .clear-btn { padding: 10px 16px; background: transparent; border: 1px solid #333; color: #999; border-radius: 8px; cursor: pointer; }
+  </style>
 </head>
 <body>
 
