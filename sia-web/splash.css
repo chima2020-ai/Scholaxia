@@ -1,3 +1,5 @@
+/* ── Scholaxia Splash — Dark / Yellow Design System ── */
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -5,11 +7,18 @@
 }
 
 :root {
-  --bg: #0a0a0f;
-  --accent: #10a37f;
-  --accent2: #7c3aed;
-  --text: #f0f0f5;
-  --text2: #9090a8;
+  --bg: #0d0d0d;
+  --bg2: #141414;
+  --bg3: #1a1a1a;
+  --border: #2a2a2a;
+  --border2: #333;
+  --yellow: #f5c518;
+  --yellow-d: #c9a010;
+  --text: #f0f0f0;
+  --text2: #999;
+  --text3: #555;
+  --font: 'Inter', sans-serif;
+  --font-h: 'Space Grotesk', sans-serif;
 }
 
 html {
@@ -17,10 +26,23 @@ html {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font);
   background: var(--bg);
   color: var(--text);
   overflow: hidden;
+}
+
+/* Subtle grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(245,197,24,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,197,24,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
 }
 
 #splash-screen {
@@ -38,7 +60,9 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 28px;
+  position: relative;
+  z-index: 1;
 }
 
 .splash-logo {
@@ -53,17 +77,18 @@ body {
 .splash-icon {
   width: 80px;
   height: 80px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  border-radius: 20px;
+  background: var(--yellow);
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 36px;
   font-weight: 800;
-  color: white;
+  color: #000;
+  font-family: var(--font-h);
   z-index: 1;
   animation: splashPop 0.8s ease 0.3s both;
-  box-shadow: 0 20px 40px rgba(16, 163, 127, 0.3);
+  box-shadow: 0 20px 40px rgba(245,197,24,0.2);
 }
 
 @keyframes splashPop {
@@ -80,16 +105,15 @@ body {
 .splash-ring {
   position: absolute;
   inset: -12px;
-  border-radius: 28px;
-  border: 2px solid rgba(16, 163, 127, 0.3);
+  border-radius: 24px;
+  border: 2px solid rgba(245,197,24,0.3);
   animation: ringExpand 2s ease infinite;
 }
 
 .splash-ring.ring2 {
   inset: -24px;
-  border-radius: 32px;
+  border-radius: 28px;
   animation-delay: 0.6s;
-  border-color: rgba(124, 58, 237, 0.3);
 }
 
 @keyframes ringExpand {
@@ -104,25 +128,27 @@ body {
 }
 
 .splash-name {
+  font-family: var(--font-h);
   font-size: 32px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--text);
   animation: fadeIn 0.6s ease 0.8s both;
   letter-spacing: -0.5px;
 }
 
 .splash-tagline {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text2);
   animation: fadeIn 0.6s ease 1s both;
   letter-spacing: 2px;
   text-transform: uppercase;
+  font-weight: 500;
 }
 
 .splash-loader {
   width: 200px;
   height: 3px;
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--border);
   border-radius: 2px;
   overflow: hidden;
   animation: fadeIn 0.6s ease 1.2s both;
@@ -130,7 +156,7 @@ body {
 
 .loader-bar {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  background: var(--yellow);
   border-radius: 2px;
   animation: loading 2s ease-in-out 1.2s both;
 }

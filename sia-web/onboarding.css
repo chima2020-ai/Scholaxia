@@ -1,3 +1,5 @@
+/* ── Scholaxia Onboarding — Dark / Yellow Design System ── */
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -5,13 +7,18 @@
 }
 
 :root {
-  --bg: #0a0a0f;
-  --bg2: #111118;
-  --accent: #10a37f;
-  --accent2: #7c3aed;
-  --text: #f0f0f5;
-  --text2: #9090a8;
-  --border: #1e1e2e;
+  --bg: #0d0d0d;
+  --bg2: #141414;
+  --bg3: #1a1a1a;
+  --border: #2a2a2a;
+  --border2: #333;
+  --yellow: #f5c518;
+  --yellow-d: #c9a010;
+  --text: #f0f0f0;
+  --text2: #999;
+  --text3: #555;
+  --font: 'Inter', sans-serif;
+  --font-h: 'Space Grotesk', sans-serif;
 }
 
 html {
@@ -19,11 +26,24 @@ html {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font);
   background: var(--bg);
   color: var(--text);
   overflow: hidden;
   height: 100vh;
+}
+
+/* Subtle grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(245,197,24,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,197,24,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .onboarding-container {
@@ -34,34 +54,37 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 60px 40px;
+  z-index: 1;
 }
 
 .skip-btn {
   position: absolute;
-  top: 24px;
-  right: 24px;
+  top: 32px;
+  right: 40px;
   background: transparent;
   border: 1px solid var(--border);
   color: var(--text2);
   padding: 10px 20px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
+  font-family: var(--font);
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
   z-index: 10;
 }
 
 .skip-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--yellow);
+  color: var(--yellow);
 }
 
 .slides-wrapper {
   position: relative;
   width: 100%;
-  max-width: 600px;
-  height: 400px;
+  max-width: 900px;
+  min-height: 500px;
   overflow: hidden;
 }
 
@@ -83,13 +106,32 @@ body {
 
 .slide-content {
   text-align: center;
-  padding: 40px 20px;
+  padding: 60px 40px;
+  max-width: 700px;
 }
 
 .slide-icon {
-  font-size: 64px;
-  margin-bottom: 24px;
+  font-size: 72px;
+  margin-bottom: 32px;
   animation: float 3s ease-in-out infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-box {
+  width: 80px;
+  height: 80px;
+  background: var(--yellow);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 800;
+  color: #000;
+  font-family: var(--font-h);
+  box-shadow: 0 20px 40px rgba(245,197,24,0.2);
 }
 
 @keyframes float {
@@ -97,56 +139,60 @@ body {
     transform: translateY(0);
   }
   50% {
-    transform: translateY(-10px);
+    transform: translateY(-8px);
   }
 }
 
 .slide h1 {
-  font-size: 32px;
+  font-family: var(--font-h);
+  font-size: 42px;
   font-weight: 700;
-  margin-bottom: 16px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  margin-bottom: 20px;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.slide h1 .highlight {
+  color: var(--yellow);
 }
 
 .slide p {
   font-size: 16px;
   color: var(--text2);
-  line-height: 1.6;
-  max-width: 400px;
+  line-height: 1.7;
+  max-width: 500px;
   margin: 0 auto;
 }
 
 .cta-btn {
-  margin-top: 32px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: white;
+  margin-top: 40px;
+  background: var(--yellow);
+  color: #000;
   border: none;
-  padding: 14px 32px;
+  padding: 14px 36px;
   border-radius: 10px;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--font-h);
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 4px 20px rgba(16, 163, 127, 0.3);
+  transition: all 0.15s;
+  letter-spacing: 0.01em;
 }
 
 .cta-btn:hover {
+  background: var(--yellow-d);
   transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(16, 163, 127, 0.4);
 }
 
 .dots-container {
   display: flex;
   gap: 12px;
-  margin-top: 40px;
+  margin-top: 48px;
 }
 
 .dot {
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: var(--border);
   cursor: pointer;
@@ -154,20 +200,20 @@ body {
 }
 
 .dot.active {
-  background: var(--accent);
+  background: var(--yellow);
   transform: scale(1.2);
 }
 
 .dot:hover {
-  background: var(--accent2);
+  background: var(--yellow-d);
 }
 
 .nav-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 50%;
@@ -175,54 +221,62 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
   color: var(--text);
 }
 
 .nav-arrow:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--yellow);
+  color: var(--yellow);
   background: var(--bg);
 }
 
 .nav-arrow.prev {
-  left: 24px;
+  left: 40px;
 }
 
 .nav-arrow.next {
-  right: 24px;
+  right: 40px;
 }
 
 /* Responsive */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
+  .onboarding-container {
+    padding: 40px 24px;
+  }
+
+  .slide-content {
+    padding: 40px 24px;
+  }
+
   .slide h1 {
-    font-size: 24px;
+    font-size: 32px;
   }
 
   .slide p {
-    font-size: 14px;
+    font-size: 15px;
   }
 
   .slide-icon {
-    font-size: 48px;
+    font-size: 56px;
   }
 
   .nav-arrow {
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
   }
 
   .nav-arrow.prev {
-    left: 12px;
+    left: 20px;
   }
 
   .nav-arrow.next {
-    right: 12px;
+    right: 20px;
   }
 
   .skip-btn {
-    top: 16px;
-    right: 16px;
+    top: 20px;
+    right: 24px;
     padding: 8px 16px;
     font-size: 12px;
   }
