@@ -26,10 +26,6 @@ class OAuthRequest(BaseModel):
     full_name: str = ""
 
 
-class ForgotPasswordRequest(BaseModel):
-    email: EmailStr
-
-
 class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
@@ -79,12 +75,6 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
         refresh_token=create_refresh_token(str(user.id)),
         role=user.role,
     )
-
-
-@router.post("/forgot-password")
-async def forgot_password(payload: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
-    """Placeholder — OTP email will be re-enabled later."""
-    return {"message": "If that email is registered, a reset code has been sent."}
 
 
 @router.post("/oauth", response_model=TokenResponse)

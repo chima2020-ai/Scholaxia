@@ -56,36 +56,30 @@
         <span>Scholaxia</span>
       </div>
 
-      <!-- Tabs -->
+      <!-- Tabs: Login + Sign Up only -->
       <div class="auth-tabs">
         <button id="tab-login" class="auth-tab active" onclick="switchTab('login')">Log in</button>
         <button id="tab-signup" class="auth-tab" onclick="switchTab('signup')">Sign up</button>
-        <button id="tab-developer" class="auth-tab" onclick="switchTab('developer')">Developer</button>
       </div>
 
       <!-- Login -->
       <div id="panel-login" class="auth-panel">
         <h2>Welcome back</h2>
-        <p class="auth-desc">Sign in to continue learning with Sia.</p>
+        <p class="auth-desc">Students, teachers, and admins all log in here.</p>
         <div class="form-group">
           <label>Email address</label>
           <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email" />
         </div>
         <div class="form-group">
           <label>Password</label>
-          <div class="input-pw-wrap">
-            <input type="password" id="login-password" placeholder="Your password" autocomplete="current-password" />
-            <button type="button" class="pw-toggle" onclick="togglePw('login-password', this)" tabindex="-1">
-              <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-          </div>
+          <input type="password" id="login-password" placeholder="Your password" autocomplete="current-password" />
         </div>
         <div id="login-error" class="error-msg"></div>
         <button class="btn-submit" id="btn-login" onclick="login()">Log in</button>
         <p class="auth-switch">Don't have an account? <a href="#" onclick="switchTab('signup')">Sign up free</a></p>
       </div>
 
-      <!-- Signup -->
+      <!-- Signup (students only — teachers added by admin) -->
       <div id="panel-signup" class="auth-panel" style="display:none">
         <h2>Create your account</h2>
         <p class="auth-desc">Start learning with Sia for free. No credit card needed.</p>
@@ -99,45 +93,10 @@
         </div>
         <div class="form-group">
           <label>Password</label>
-          <div class="input-pw-wrap">
-            <input type="password" id="signup-password" placeholder="Min 8 characters" autocomplete="new-password" />
-            <button type="button" class="pw-toggle" onclick="togglePw('signup-password', this)" tabindex="-1">
-              <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-          </div>
+          <input type="password" id="signup-password" placeholder="Min 8 characters" autocomplete="new-password" />
         </div>
         <div id="signup-error" class="error-msg"></div>
         <button class="btn-submit" id="btn-signup" onclick="signup()">Create account</button>
-        <p class="auth-switch">Already have an account? <a href="#" onclick="switchTab('login')">Log in</a></p>
-      </div>
-
-      <!-- Developer -->
-      <div id="panel-developer" class="auth-panel" style="display:none">
-        <h2>Developer account</h2>
-        <p class="auth-desc">Get API keys to integrate Sia into your application.</p>
-        <div class="form-group">
-          <label>Full name</label>
-          <input type="text" id="dev-name" placeholder="Your name" />
-        </div>
-        <div class="form-group">
-          <label>Email address</label>
-          <input type="email" id="dev-email" placeholder="you@company.com" />
-        </div>
-        <div class="form-group">
-          <label>Company / App name</label>
-          <input type="text" id="dev-company" placeholder="My App" />
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <div class="input-pw-wrap">
-            <input type="password" id="dev-password" placeholder="Min 8 characters" />
-            <button type="button" class="pw-toggle" onclick="togglePw('dev-password', this)" tabindex="-1">
-              <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-          </div>
-        </div>
-        <div id="dev-error" class="error-msg"></div>
-        <button class="btn-submit" id="btn-dev" onclick="devSignup()">Create developer account</button>
         <p class="auth-switch">Already have an account? <a href="#" onclick="switchTab('login')">Log in</a></p>
       </div>
 
@@ -150,20 +109,11 @@ const API = "https://scholaxia1.onrender.com";
 
 window.onload = () => {
   const params = new URLSearchParams(window.location.search);
-  const mode = params.get("mode");
-  if (mode === "signup") switchTab("signup");
-  else if (mode === "developer") switchTab("developer");
+  if (params.get("mode") === "signup") switchTab("signup");
 };
 
-function togglePw(id, btn) {
-  const input = document.getElementById(id);
-  const isHidden = input.type === "password";
-  input.type = isHidden ? "text" : "password";
-  btn.querySelector(".eye-icon").style.opacity = isHidden ? "1" : "0.4";
-}
-
 function switchTab(tab) {
-  ["login","signup","developer"].forEach(t => {
+  ["login", "signup"].forEach(t => {
     document.getElementById(`tab-${t}`).classList.toggle("active", t === tab);
     document.getElementById(`panel-${t}`).style.display = t === tab ? "block" : "none";
   });
@@ -179,20 +129,35 @@ async function login() {
   btn.disabled = true; btn.textContent = "Logging in...";
   try {
     const res = await fetch(`${API}/api/v1/auth/login`, {
-      method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({email, password}), signal: AbortSignal.timeout(30000)
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+      signal: AbortSignal.timeout(30000)
     });
     const data = await res.json();
     if (!res.ok) { err.textContent = data.detail || "Login failed."; return; }
     localStorage.setItem("sia_token", data.access_token);
     localStorage.setItem("sia_role", data.role);
-    const p = await fetch(`${API}/api/v1/students/me`, {headers:{Authorization:`Bearer ${data.access_token}`}});
-    if (p.ok) { const pd = await p.json(); localStorage.setItem("sia_name", pd.full_name || email); }
-    else localStorage.setItem("sia_name", email);
-    if (data.role === "developer" || data.role === "admin") window.location.href = "dashboard.html";
+    // Try to get display name
+    try {
+      const p = await fetch(`${API}/api/v1/students/me`, {
+        headers: { Authorization: `Bearer ${data.access_token}` }
+      });
+      if (p.ok) {
+        const pd = await p.json();
+        localStorage.setItem("sia_name", pd.full_name || email);
+      } else {
+        localStorage.setItem("sia_name", email);
+      }
+    } catch { localStorage.setItem("sia_name", email); }
+    // Route by role
+    const role = data.role;
+    if (role === "admin" || role === "developer") window.location.href = "dashboard.html";
+    else if (role === "teacher") window.location.href = "classroom.html";
     else window.location.href = "chat.html";
-  } catch(e) {
-    err.textContent = e.name === "TimeoutError" ? "Server is waking up — try again in 30s." : "Network error. Try again.";
+  } catch (e) {
+    err.textContent = e.name === "TimeoutError"
+      ? "Server is waking up — try again in 30 seconds."
+      : "Network error. Try again.";
   } finally { btn.disabled = false; btn.textContent = "Log in"; }
 }
 
@@ -208,8 +173,9 @@ async function signup() {
   btn.disabled = true; btn.textContent = "Creating account...";
   try {
     const res = await fetch(`${API}/api/v1/auth/student/signup`, {
-      method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({email, password, full_name: name}), signal: AbortSignal.timeout(30000)
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, full_name: name }),
+      signal: AbortSignal.timeout(30000)
     });
     const data = await res.json();
     if (!res.ok) { err.textContent = data.detail || "Signup failed."; return; }
@@ -217,36 +183,11 @@ async function signup() {
     localStorage.setItem("sia_name", name);
     localStorage.setItem("sia_role", data.role || "student");
     window.location.href = "chat.html";
-  } catch(e) {
-    err.textContent = e.name === "TimeoutError" ? "Server is waking up — try again in 30s." : "Network error. Try again.";
+  } catch (e) {
+    err.textContent = e.name === "TimeoutError"
+      ? "Server is waking up — try again in 30 seconds."
+      : "Network error. Try again.";
   } finally { btn.disabled = false; btn.textContent = "Create account"; }
-}
-
-async function devSignup() {
-  const name = document.getElementById("dev-name").value.trim();
-  const email = document.getElementById("dev-email").value.trim();
-  const company = document.getElementById("dev-company").value.trim();
-  const password = document.getElementById("dev-password").value;
-  const err = document.getElementById("dev-error");
-  const btn = document.getElementById("btn-dev");
-  err.textContent = "";
-  if (!name || !email || !password) { err.textContent = "Please fill in all fields."; return; }
-  btn.disabled = true; btn.textContent = "Creating account...";
-  try {
-    const res = await fetch(`${API}/api/v1/developer/auth/signup`, {
-      method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({email, password, full_name: name, company_name: company || "My App"}),
-      signal: AbortSignal.timeout(30000)
-    });
-    const data = await res.json();
-    if (!res.ok) { err.textContent = data.detail || "Signup failed."; return; }
-    localStorage.setItem("sia_token", data.access_token);
-    localStorage.setItem("sia_name", name);
-    localStorage.setItem("sia_role", data.role || "developer");
-    window.location.href = "dashboard.html";
-  } catch(e) {
-    err.textContent = e.name === "TimeoutError" ? "Server is waking up — try again in 30s." : "Network error. Try again.";
-  } finally { btn.disabled = false; btn.textContent = "Create developer account"; }
 }
 </script>
 </body>

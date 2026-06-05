@@ -80,6 +80,10 @@ class Settings(BaseSettings):
     ELEVENLABS_VOICE_ID: str = "21m00Tcm4TlvDq8ikWAM"
     ELEVENLABS_MODEL_ID: str = "eleven_multilingual_v2"
 
+    # Agora (Live Classes — real-time video/audio)
+    AGORA_APP_ID: str = "2735ab34da634131bd67bdaa9a200d8b"
+    AGORA_APP_CERTIFICATE: str = ""  # set in Render env vars
+
     ADMIN_EMAIL: str = "admin@scholaxia.com"
     ADMIN_PASSWORD: str = "changeme"
     ADMIN_INVITE_CODE: str = "SCHOLAXIA_ADMIN_2026"

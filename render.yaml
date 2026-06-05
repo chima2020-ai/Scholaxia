@@ -81,6 +81,12 @@ services:
       - key: ELEVENLABS_MODEL_ID
         value: eleven_multilingual_v2
 
+      # Agora (Live Classes)
+      - key: AGORA_APP_ID
+        value: 2735ab34da634131bd67bdaa9a200d8b
+      - key: AGORA_APP_CERTIFICATE
+        sync: false
+
       # Admin
       - key: ADMIN_EMAIL
         sync: false
