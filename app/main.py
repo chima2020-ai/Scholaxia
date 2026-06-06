@@ -10,6 +10,7 @@ from app.core.seed import seed_database
 
 from app.routers import auth, students, admin, live_class, cbt, community, ai_tutor, notifications, payments
 from app.routers import developer_auth, developer_keys, public_ai_api, reviews_reports, teacher_ai, library, wallet
+from app.routers import profiles
 from app.websockets.live_class_ws import live_class_endpoint
 
 
@@ -56,6 +57,7 @@ app.include_router(wallet.router, prefix="/api/v1")
 app.include_router(developer_auth.router, prefix="/api/v1")
 app.include_router(developer_keys.router, prefix="/api/v1")
 app.include_router(public_ai_api.router, prefix="/api")
+app.include_router(profiles.router, prefix="/api/v1")
 
 
 @app.websocket("/ws/live-class/{room_id}")
